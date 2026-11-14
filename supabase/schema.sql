@@ -14,7 +14,9 @@ create table public.profiles (
   id         uuid primary key references auth.users(id) on delete cascade,
   email      text not null,
   full_name  text not null default '',
-  role       text not null default 'chief' check (role in ('admin', 'chief')),
+  -- Şimdilik giriş yapan herkes yöneticidir (her şeyi görür). Şantiye bazlı kısıtlama istenirse
+  -- varsayılanı 'chief' yapıp kişileri site_members ile şantiyelere atamak yeterlidir; kurallar hazır.
+  role       text not null default 'admin' check (role in ('admin', 'chief')),
   created_at timestamptz not null default now()
 );
 

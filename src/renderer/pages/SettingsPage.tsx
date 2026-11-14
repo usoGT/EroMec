@@ -3,9 +3,7 @@ import { DatabaseBackup, Plus, RotateCcw, Save } from 'lucide-react';
 import type { Category } from '../../shared/types';
 import { api, errorMessage } from '../lib/api';
 import { useApp } from '../lib/context';
-import { useSession } from '../lib/session';
 import PageHeader from '../components/PageHeader';
-import UsersSection from '../components/UsersSection';
 import Modal from '../components/Modal';
 import { Field, FormError, MoneyInput } from '../components/Fields';
 
@@ -13,7 +11,6 @@ const KIND_LABEL = { salary: 'Maaş gideri', overtime: 'Ek mesai ödemesi', othe
 type Kind = keyof typeof KIND_LABEL;
 
 export default function SettingsPage() {
-  const { me, isAdmin } = useSession();
   const { settings, reloadSettings, toast, showError, money } = useApp();
   const [form, setForm] = useState(settings);
   const [error, setError] = useState<string | null>(null);
@@ -90,7 +87,6 @@ export default function SettingsPage() {
   return (
     <div className="max-w-3xl">
       <PageHeader title="Ayarlar" />
-      {me && isAdmin && <UsersSection />}
 
       <section className="card mb-4 px-5 py-4">
         <h2 className="mb-3 font-semibold">Genel</h2>

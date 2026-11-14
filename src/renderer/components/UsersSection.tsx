@@ -1,3 +1,5 @@
+// ŞU AN KULLANILMIYOR: giriş yapan herkes yönetici sayılıyor (bkz. supabase/schema.sql, profiles.role).
+// Şantiye bazlı yetki istenirse bu bölüm Ayarlar sayfasına yeniden eklenir.
 // Ayarlar → Kullanıcılar (yalnızca ana firma yöneticisi, çevrimiçi sürüm):
 // kayıt olan kişilerin rolünü ve hangi şantiyelere bakacağını belirler.
 import { useCallback, useEffect, useState } from 'react';

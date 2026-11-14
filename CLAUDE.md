@@ -14,6 +14,7 @@ Eroğlu Mechanic için personel, puantaj, bordro, mesai ve gider takibi. Arayüz
 - `src/renderer` – React + Tailwind arayüz. Telefonda (<768px) alt menü ve kart listeler (`useIsMobile`).
 - `src/web` – tarayıcı/telefon sürümü: `webApi.ts` (window.eromec), `engine.ts` + `sync.ts` (Supabase eşitleme).
 - `supabase/schema.sql` + `sync.sql` – sunucu şeması, RLS ve eşitleme işlevleri. Proje ref: `bpaeriysvjwhvyszjoxh`.
+- Yetki: şimdilik giriş yapan herkes yönetici (profiles.role varsayılanı 'admin'); şantiye bazlı RLS kuralları duruyor ama kullanılmıyor.
 - Para kuruş (tam sayı), tarih ekranda gg.aa.yyyy, hafta Pazartesi başlar.
 
 ## Komutlar

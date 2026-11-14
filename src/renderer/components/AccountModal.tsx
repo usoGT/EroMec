@@ -83,7 +83,6 @@ export default function AccountModal({ onClose, initialTab = 'login' }: { onClos
           <div className="min-w-0">
             <div className="truncate font-semibold" data-testid="account-name">{account.fullName || '—'}</div>
             <div className="truncate text-sm text-slate-500" data-testid="account-email">{account.email}</div>
-            {me && <div className="text-xs text-slate-500" data-testid="account-role">{me.role === 'admin' ? 'Yönetici (ana firma)' : `Şantiye şefi · ${me.siteIds.length} şantiye`}</div>}
           </div>
         </div>
         {me && (
@@ -132,7 +131,7 @@ export default function AccountModal({ onClose, initialTab = 'login' }: { onClos
       {tab === 'login' ? (
         <button type="button" className="btn-link mt-3" onClick={forgot} disabled={busy || !SERVER_CONFIGURED}>Şifremi unuttum</button>
       ) : (
-        <p className="mt-3 text-xs text-slate-500">Kayıt olduktan sonra yöneticiniz sizi bir şantiyeye atayana kadar kayıtları göremezsiniz.</p>
+        <p className="mt-3 text-xs text-slate-500">Kayıt olduktan sonra e-postanıza gelen onay bağlantısına tıklayın, ardından giriş yapın.</p>
       )}
     </Modal>
   );
