@@ -132,20 +132,6 @@ export function SessionGate({ children }: { children: ReactNode }) {
 
   if (state !== 'ready' || !me) return <Splash><p className="text-white/60" data-testid="gate-loading">Veriler yükleniyor…</p></Splash>;
 
-  if (me.role === 'chief' && me.siteIds.length === 0) {
-    return (
-      <Splash>
-        <p className="max-w-sm text-white/80" data-testid="gate-unassigned">
-          Hesabınız açıldı ({me.email}). Yöneticiniz sizi bir şantiyeye atadığında kayıtları görebileceksiniz.
-        </p>
-        <div className="flex gap-2">
-          <button className="btn-primary" disabled={refreshing} onClick={() => void refresh()}><RefreshCw size={16} /> Yenile</button>
-          <button className="btn border-white/30 text-white hover:bg-white/10" onClick={() => void signOut().catch(showError)}><LogOut size={16} /> Çıkış yap</button>
-        </div>
-      </Splash>
-    );
-  }
-
   return (
     <Ctx.Provider value={{ me, isAdmin: me.role === 'admin', refresh, refreshing }}>
       {/* Veri yenilenince sayfalar baştan kurulur ki listeler güncel veriyi çeksin */}

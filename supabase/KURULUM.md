@@ -4,7 +4,7 @@
    - Ad: `EroMec`, Plan: **Free**, Bölge: **Central EU (Frankfurt)**
    - Veritabanı şifresini kendin belirle ve sakla (kimseye verme).
 2. Sol menü **SQL Editor** → **New query** → `schema.sql` dosyasının tamamını yapıştır → **Run**.
-   Ardından aynı şekilde `sync.sql` dosyasını çalıştır (veri eşitleme işlevleri).
+   Ardından aynı şekilde önce `sync.sql` (veri eşitleme), sonra `uyelik.sql` (üyelik kuralları) dosyasını çalıştır.
 3. **Authentication → Sign In / Providers**: Email açık kalsın, **Confirm email** açık olsun
    (uygulamadaki "Kayıt ol" ile hesap açan kişi mailini onaylamadan giremez).
 4. Uygulamayı açıp **Kayıt ol** ile kendi hesabını aç, maildeki onay linkine tıkla.
