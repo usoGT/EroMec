@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { DatabaseBackup, Plus, RotateCcw, Save } from 'lucide-react';
+import { DatabaseBackup, Plus, RotateCcw, Save, Upload } from 'lucide-react';
 import type { Category } from '../../shared/types';
 import { api, errorMessage } from '../lib/api';
 import { useApp } from '../lib/context';
+import { useSession } from '../lib/session';
 import PageHeader from '../components/PageHeader';
 import Modal from '../components/Modal';
 import { Field, FormError, MoneyInput } from '../components/Fields';
@@ -12,6 +13,7 @@ type Kind = keyof typeof KIND_LABEL;
 
 export default function SettingsPage() {
   const { settings, reloadSettings, toast, showError, money } = useApp();
+  const { me, refresh } = useSession();
   const [form, setForm] = useState(settings);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -73,7 +75,10 @@ export default function SettingsPage() {
     try {
       // Dosya seçimi ve "üzerine yazılacak" onayı ana süreçteki pencerelerle yapılır.
       const r = await api.backupRestore();
-      if (r.restored) {
+      if (r.imported) {
+        toast(r.imported);
+        await refresh();
+      } else if (r.restored) {
         toast('Yedek geri yüklendi. Uygulama yenileniyor…');
         setTimeout(() => window.location.reload(), 1200);
       }
@@ -124,14 +129,20 @@ export default function SettingsPage() {
       <section className="card mb-4 px-5 py-4">
         <h2 className="mb-1 font-semibold">Veritabanı yedekleme</h2>
         <p className="mb-3 text-sm text-slate-600">
-          Bütün veriler bu bilgisayardaki tek bir dosyada saklanır. Düzenli olarak yedek alıp USB belleğe veya başka bir diske kopyalamanız önerilir.
+          {me
+            ? 'Veriler sunucuda saklanır. “Yedek al” gördüğünüz bütün verilerin bir kopyasını bu cihaza indirir.'
+            : 'Bütün veriler bu bilgisayardaki tek bir dosyada saklanır. Düzenli olarak yedek alıp USB belleğe veya başka bir diske kopyalamanız önerilir.'}
         </p>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button className="btn-primary" onClick={() => void backup()} disabled={busy}><DatabaseBackup size={16} /> Yedek al</button>
-          <button className="btn-secondary" onClick={() => void restore()} disabled={busy}><RotateCcw size={16} /> Yedekten geri yükle</button>
+          <button className="btn-secondary" data-testid="backup-restore" onClick={() => void restore()} disabled={busy}>
+            {me ? <><Upload size={16} /> Masaüstü yedeğini aktar</> : <><RotateCcw size={16} /> Yedekten geri yükle</>}
+          </button>
         </div>
         <p className="mt-2 text-xs text-slate-500">
-          Geri yükleme mevcut verilerin üzerine yazar; işlemden önce onay istenir ve mevcut verilerin otomatik bir kopyası “yedekler” klasörüne kaydedilir.
+          {me
+            ? 'Masaüstü uygulamasından aldığınız yedek dosyasındaki (.db) bütün kayıtlar hesabınıza eklenir; mevcut veriler silinmez. Aynı yedek iki kez aktarılamaz.'
+            : 'Geri yükleme mevcut verilerin üzerine yazar; işlemden önce onay istenir ve mevcut verilerin otomatik bir kopyası “yedekler” klasörüne kaydedilir.'}
         </p>
         {dbInfo && (
           <p className="mt-2 break-all text-xs text-slate-500">

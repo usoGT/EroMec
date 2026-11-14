@@ -13,12 +13,13 @@ Eroğlu Mechanic için personel, puantaj, bordro, mesai ve gider takibi. Arayüz
 - `src/main` – Electron ana süreç (masaüstü, çevrimdışı, veriler PC'de).
 - `src/renderer` – React + Tailwind arayüz. Telefonda (<768px) alt menü ve kart listeler (`useIsMobile`).
 - `src/web` – tarayıcı/telefon sürümü: `webApi.ts` (window.eromec), `engine.ts` + `sync.ts` (Supabase eşitleme).
-- `supabase/schema.sql` + `sync.sql` + `uyelik.sql` (bu sırayla çalışır) – sunucu şeması, RLS ve eşitleme işlevleri. Proje ref: `bpaeriysvjwhvyszjoxh`.
-- Yetki (supabase/uyelik.sql): ayrı yönetici yok. Her üye kendi açtığı şantiyeleri ve kendi yazdığı kayıtları görür; firma, ayar, kategori ve fırçalar ortaktır.
+- `supabase/schema.sql` + `sync.sql` + `uyelik.sql` + `paylasim.sql` (bu sırayla çalışır; `tests/pg.ts` hepsini PGlite'ta kurar) – sunucu şeması, RLS ve eşitleme işlevleri. Proje ref: `bpaeriysvjwhvyszjoxh`.
+- Yetki (supabase/uyelik.sql): ayrı yönetici yok. Her üye kendi açtığı şantiyeleri ve kendi yazdığı kayıtları görür; firma, ayar, kategori ve fırçalar ortaktır (herkes düzenler, kullanıcı kararı). Şantiye sahibi e-postayla üye ekler (paylasim.sql).
+- Web yayını: GitHub Pages (`.github/workflows/web.yml`), Supabase değerleri depo değişkenlerinde (`SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`).
 - Para kuruş (tam sayı), tarih ekranda gg.aa.yyyy, hafta Pazartesi başlar.
 
 ## Komutlar
-- `npm test` (vitest) · `npm run build` (masaüstü) · `xvfb-run -a npx playwright test` (e2e)
+- `npm test` (vitest; sunucu SQL'i de `tests/server-sql.test.ts` ile PGlite'ta denenir) · `npm run build` (masaüstü) · `xvfb-run -a npx playwright test` (e2e)
 - `npm run dev:web` / `npm run build:web` – tarayıcı sürümü (port 5180, `.env.web` gerekir)
 - Değişiklikten sonra: typecheck + vitest + e2e geçmeli, sonra commit + push.
 

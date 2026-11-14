@@ -8,12 +8,15 @@
 - Yetki: ayrı yönetici yok; her üye kendi açtığı şantiyeleri ve kendi yazdığı kayıtları görür. Firma, ayar, kategori ve fırçalar ortak.
 
 ## Faz 3 – Gerçek kullanıma hazırlık
-- [ ] İlk gerçek giriş denemesi (kullanıcı kayıt olur, giriş yapar, veri girer)
-- [ ] Web'i internete koy (Vercel/Netlify); Supabase site_url ve onay linkini o adrese çevir
-- [ ] Masaüstündeki mevcut veriyi Supabase'e taşıma (yedek dosyasından içe aktar)
-- [ ] Bir şantiyeyi başka üyeyle paylaşma (şu an şantiyeyi yalnızca açan kişi görür)
-- [ ] Ortak listeleri (ayar, kategori, fırça) kimin değiştirebileceğine karar ver
-- [ ] Kendi mail servisi (Supabase'in saatte 2 mail sınırı var)
+- [x] Web'i internete koy: GitHub Pages iş akışı (`.github/workflows/web.yml`), adres https://usogt.github.io/EroMec/
+- [x] Masaüstündeki mevcut veriyi Supabase'e taşıma: Ayarlar → Masaüstü yedeğini aktar (`src/web/importBackup.ts`)
+- [x] Bir şantiyeyi başka üyeyle paylaşma: Şantiyeler → Paylaş, e-postayla (`supabase/paylasim.sql`)
+- [x] Ortak listeler (firma, ayar, kategori, fırça): karar → herkes düzenleyebilir (şimdiki gibi kalıyor)
+- [x] Şifre yenileme linkinden gelince yeni şifre ekranı
+- [x] Kendi mail servisi: Resend SMTP kurulum adımları + Türkçe mail şablonları (`supabase/KURULUM.md`, `mail-sablonlari.md`)
+- [ ] KULLANICI: Supabase'de `paylasim.sql` çalıştır; GitHub'da Pages + iki değişkeni ayarla; Supabase Site URL'ini değiştir
+- [ ] KULLANICI: Resend hesabı + alan adı, Supabase SMTP ayarı
+- [ ] KULLANICI: İlk gerçek giriş denemesi (kayıt ol, giriş yap, veri gir, masaüstü yedeğini aktar)
 
 ## Faz 4 – Masaüstü + PC yedeği
 - [ ] Masaüstü uygulaması da giriş yapıp Supabase'e bağlansın

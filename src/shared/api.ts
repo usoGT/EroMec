@@ -73,7 +73,8 @@ export interface EroMecApi {
   settingsGet(): Promise<AppSettings>;
   settingsSave(s: AppSettings): Promise<AppSettings>;
   backupCreate(): Promise<{ saved: boolean; path?: string }>;
-  backupRestore(): Promise<{ restored: boolean; path?: string; safetyCopy?: string }>;
+  /** Masaüstünde/yerelde: yedeği geri yükler. Çevrimiçi sürümde: yedekteki verileri hesaba aktarır (imported: özet). */
+  backupRestore(): Promise<{ restored: boolean; path?: string; safetyCopy?: string; imported?: string }>;
   dbInfo(): Promise<{ path: string; schemaVersion: number }>;
 }
 

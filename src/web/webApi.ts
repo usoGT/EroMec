@@ -10,7 +10,9 @@ import { API_METHODS, type EroMecApi } from '../shared/api';
 import { formatPeriod, todayIso } from '../shared/dates';
 import type { AppSettings, SiteFilter, ThemeMode } from '../shared/types';
 import { getSupabase, SERVER_CONFIGURED } from '../renderer/lib/auth';
-import { installTracking } from './sync';
+import { installTracking, serverErrorMessage } from './sync';
+import { validateBackup } from '../main/db/backup';
+import { fingerprintOf, importBackup, importState } from './importBackup';
 import { createEngine, type Engine, type Me, type PullResult, type Remote } from './engine';
 
 /** Arayüzün çevrimiçi durumu yönetmek için kullandığı uçlar (window.eromecSync) */
@@ -21,7 +23,15 @@ export interface SyncController {
   connect(): Promise<Me>;
   refresh(): Promise<Me>;
   disconnect(): Promise<void>;
+  /** Şantiyenin üyeleri (sahip ilk sırada) */
+  siteMembers(siteId: number): Promise<SiteMember[]>;
+  /** Kayıtlı bir üyeyi e-postasıyla şantiyeye ekler (yalnızca sahip) */
+  siteShare(siteId: number, email: string): Promise<SiteMember>;
+  /** Üyeyi şantiyeden çıkarır (sahip herkesi, üye yalnızca kendini) */
+  siteUnshare(siteId: number, userId: string): Promise<void>;
 }
+
+export interface SiteMember { userId: string; email: string; fullName: string; isOwner: boolean }
 
 declare global {
   interface Window {
@@ -54,6 +64,34 @@ const supabaseRemote: Remote = {
     if (error) throw error;
     return String(data);
   },
+};
+
+/** Sunucu işlevlerinin kendi (Türkçe) hata mesajları olduğu gibi gösterilir. */
+const rpcError = (e: unknown) => {
+  const err = e as { code?: string; message?: string };
+  return new Error(err?.code === 'P0002' || (err?.code === '42501' && /[ışğüöçİ]/.test(err.message ?? '')) ? String(err.message) : serverErrorMessage(e));
+};
+
+async function rpc<T>(fn: string, args: Record<string, unknown>): Promise<T> {
+  let res: { data: unknown; error: unknown };
+  try {
+    res = await (await getSupabase()).rpc(fn, args);
+  } catch (e) {
+    throw new Error(serverErrorMessage(e));
+  }
+  if (res.error) throw rpcError(res.error);
+  return res.data as T;
+}
+
+const siteApi = {
+  siteMembers: async (siteId: number): Promise<SiteMember[]> =>
+    (await rpc<{ user_id: string; email: string; full_name: string; is_owner: boolean }[]>('site_members_list', { sid: siteId }))
+      .map((m) => ({ userId: m.user_id, email: m.email, fullName: m.full_name, isOwner: m.is_owner })),
+  siteShare: async (siteId: number, email: string): Promise<SiteMember> => {
+    const r = await rpc<{ userId: string; email: string; fullName: string }>('site_share', { sid: siteId, member_email: email });
+    return { ...r, isOwner: false };
+  },
+  siteUnshare: (siteId: number, userId: string) => rpc<void>('site_unshare', { sid: siteId, member_id: userId }),
 };
 
 const IDB_NAME = 'eromec';
@@ -127,6 +165,8 @@ function pickFile(accept: string): Promise<File | null> {
   });
 }
 
+const offline = () => Promise.reject(new Error('Sunucu bağlı değil.'));
+
 const scopeSuffix = (label: string) => (label.startsWith('Bütün') ? '' : ` ${label.replace(/ \(bütün şantiyeler\)$/, '')}`);
 
 export async function installWebApi(): Promise<void> {
@@ -163,6 +203,51 @@ export async function installWebApi(): Promise<void> {
     installTracking(db);
     engine = createEngine(db, supabaseRemote);
   }
+
+  /** Çevrimiçi sürüm: masaüstü yedeğindeki verileri hesaba (sunucuya) ekler; mevcut veriler silinmez. */
+  const importToServer = async (eng: Engine, file: File) => {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const clean = validateBackup(db, bytes);
+    const fp = await fingerprintOf(bytes);
+    const state = importState(db, fp);
+    if (state?.startsWith('tamamlandı')) throw new UserError(`Bu yedek (${file.name}) daha önce aktarılmış. Kayıtlar çift olmasın diye tekrar aktarılmadı.`);
+    if (state && !window.confirm(`Bu yedeğin aktarımı daha önce yarıda kalmış.
+
+Tekrar aktarılırsa yarıda kalan kısımdaki bazı kayıtlar (gider, mesai) çift olabilir. Yine de devam edilsin mi?`)) {
+      return { restored: false };
+    }
+    const src = new Db(SQL, new SQL.Database(clean), null);
+    try {
+      const count = (t: string) => src.get<{ n: number }>(`SELECT COUNT(*) AS n FROM ${t}`)?.n ?? 0;
+      const ok = window.confirm(
+        `“${file.name}” yedeğindeki veriler hesabınıza aktarılacak:
+
+` +
+        `• ${count('sites')} şantiye, ${count('employees')} çalışan
+• ${count('attendance')} puantaj, ${count('overtime_records')} mesai, ${count('expenses')} gider kaydı
+
+` +
+        'Mevcut verileriniz silinmez. Aynı adlı firma/şantiye/kategori ve aynı T.C. numaralı çalışan yeniden eklenmez. ' +
+        'Aktarılan şantiyeleri yalnızca siz görürsünüz (sonra paylaşabilirsiniz). Devam edilsin mi?',
+      );
+      if (!ok) return { restored: false };
+      const r = await importBackup(db, src, { firstEmployeeNo: await eng.nextEmployeeNo(), fingerprint: fp, checkpoint: () => eng.checkpoint() })
+        .catch((e) => { throw new Error(`Aktarım yarıda kaldı: ${(e as Error).message} O ana kadar aktarılan kayıtlar hesabınızda duruyor.`); });
+      const n = (t: string) => r.added[t] ?? 0;
+      const parts = [
+        n('sites') && `${n('sites')} şantiye`, n('employees') && `${n('employees')} çalışan`, n('attendance') && `${n('attendance')} puantaj`,
+        n('overtime_records') && `${n('overtime_records')} mesai`, n('expenses') && `${n('expenses')} gider`, n('payrolls') && `${n('payrolls')} bordro`,
+      ].filter(Boolean);
+      const matched = Object.values(r.matched).reduce((a, b) => a + b, 0);
+      return {
+        restored: true,
+        path: file.name,
+        imported: `Aktarıldı: ${parts.length ? parts.join(', ') : 'yeni kayıt yok'}.${matched ? ` ${matched} kayıt mevcut olanla eşleştirildi.` : ''}${r.skipped ? ` ${r.skipped} kayıt zaten olduğu için atlandı.` : ''}`,
+      };
+    } finally {
+      src.close();
+    }
+  };
 
   type Handler = (arg: any) => unknown | Promise<unknown>;
   const extra: Partial<Record<keyof EroMecApi, Handler>> = {
@@ -207,9 +292,9 @@ export async function installWebApi(): Promise<void> {
       return { saved: true, path: name };
     },
     backupRestore: async () => {
-      if (online) throw new UserError('Çevrimiçi sürümde yedekten geri yükleme henüz yok. Yedek dosyasını masaüstü uygulamasında açabilirsiniz.');
       const file = await pickFile('.db,.sqlite,.sqlite3');
       if (!file) return { restored: false };
+      if (engine) return importToServer(engine, file);
       if (!window.confirm(`Mevcut bütün verilerin üzerine yazılacak.\n\nSeçilen yedek: ${file.name}\n\nŞu anki veriler önce güvenlik amacıyla indirilecek. Devam edilsin mi?`)) {
         return { restored: false };
       }
@@ -256,6 +341,6 @@ export async function installWebApi(): Promise<void> {
   window.eromec = Object.freeze(api) as unknown as EroMecApi;
   const e = engine;
   window.eromecSync = e
-    ? { online: true, get me() { return e.me; }, connect: () => e.connect(), refresh: () => e.refresh(), disconnect: () => e.disconnect() }
-    : { online: false, me: null, connect: () => Promise.reject(new Error('Sunucu bağlı değil.')), refresh: () => Promise.reject(new Error('Sunucu bağlı değil.')), disconnect: () => Promise.resolve() };
+    ? { online: true, get me() { return e.me; }, connect: () => e.connect(), refresh: () => e.refresh(), disconnect: () => e.disconnect(), ...siteApi }
+    : { online: false, me: null, connect: offline, refresh: offline, disconnect: () => Promise.resolve(), siteMembers: offline, siteShare: offline, siteUnshare: offline };
 }

@@ -33,6 +33,10 @@ interface AuthValue {
   signUp: (fullName: string, email: string, password: string) => Promise<{ needsConfirm: boolean }>;
   resetPassword: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
+  /** Şifre yenileme bağlantısıyla gelindi: yeni şifre istenmeli */
+  recovering: boolean;
+  updatePassword: (password: string) => Promise<void>;
+  endRecovery: () => void;
 }
 
 const Ctx = createContext<AuthValue | null>(null);
@@ -48,6 +52,7 @@ const ERRORS: [RegExp, string][] = [
   [/invalid login credentials/i, 'E-posta veya şifre hatalı.'],
   [/email not confirmed/i, 'E-posta adresiniz henüz onaylanmamış. Gelen kutunuzdaki onay bağlantısına tıklayın.'],
   [/already registered|already been registered|user already exists/i, 'Bu e-posta ile zaten bir hesap var. Giriş yapmayı deneyin.'],
+  [/should be different from the old password/i, 'Yeni şifre eskisiyle aynı olamaz.'],
   [/password should be at least|weak password/i, 'Şifre çok kısa veya zayıf. En az 8 karakter kullanın.'],
   [/signups? (are )?(not allowed|disabled)/i, 'Yeni kayıt şu an kapalı. Yöneticinizden davet isteyin.'],
   [/rate limit|too many requests|security purposes/i, 'Çok fazla deneme yapıldı. Biraz bekleyip tekrar deneyin.'],
@@ -67,6 +72,7 @@ const toAccount = (u: RawUser): Account | null =>
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [account, setAccount] = useState<Account | null>(null);
   const [loading, setLoading] = useState(SERVER_CONFIGURED);
+  const [recovering, setRecovering] = useState(false);
 
   useEffect(() => {
     if (!SERVER_CONFIGURED) return;
@@ -77,7 +83,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { data } = await sb.auth.getSession();
         if (cancelled) return;
         setAccount(toAccount(data.session?.user));
-        const sub = sb.auth.onAuthStateChange((_event, session) => setAccount(toAccount(session?.user)));
+        const sub = sb.auth.onAuthStateChange((event, session) => {
+          setAccount(toAccount(session?.user));
+          if (event === 'PASSWORD_RECOVERY') setRecovering(true);
+        });
         off = () => sub.data.subscription.unsubscribe();
       })
       .catch((e) => console.error('[EroMec] oturum kontrolü:', e))
@@ -115,6 +124,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   }, []);
 
-  const value = useMemo(() => ({ account, loading, signIn, signUp, resetPassword, signOut }), [account, loading, signIn, signUp, resetPassword, signOut]);
+  const updatePassword = useCallback(async (password: string) => {
+    const sb = await getSupabase();
+    const { error } = await sb.auth.updateUser({ password });
+    if (error) throw error;
+    setRecovering(false);
+  }, []);
+  const endRecovery = useCallback(() => setRecovering(false), []);
+
+  const value = useMemo(() => ({ account, loading, signIn, signUp, resetPassword, signOut, recovering, updatePassword, endRecovery }),
+    [account, loading, signIn, signUp, resetPassword, signOut, recovering, updatePassword, endRecovery]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

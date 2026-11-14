@@ -8,6 +8,7 @@ import { useApp } from './context';
 import { errorMessage } from './api';
 import Logo, { Wordmark } from '../components/Logo';
 import AccountModal from '../components/AccountModal';
+import NewPasswordModal from '../components/NewPasswordModal';
 
 interface SessionValue {
   /** Çevrimiçi sürümde giriş yapan kullanıcının rolü ve şantiyeleri; yerel sürümde null */
@@ -37,7 +38,7 @@ function Splash({ children }: { children: ReactNode }) {
 
 export function SessionGate({ children }: { children: ReactNode }) {
   const online = SERVER_CONFIGURED && window.eromecSync?.online === true;
-  const { account, loading, signOut } = useAuth();
+  const { account, loading, signOut, recovering } = useAuth();
   const { reloadSettings, showError } = useApp();
   const [me, setMe] = useState<Me | null>(null);
   const [state, setState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
@@ -136,6 +137,7 @@ export function SessionGate({ children }: { children: ReactNode }) {
     <Ctx.Provider value={{ me, isAdmin: me.role === 'admin', refresh, refreshing }}>
       {/* Veri yenilenince sayfalar baştan kurulur ki listeler güncel veriyi çeksin */}
       <div key={version} className="h-full">{children}</div>
+      {recovering && <NewPasswordModal />}
     </Ctx.Provider>
   );
 }

@@ -1,0 +1,57 @@
+# Tarayıcı/telefon sürümünü GitHub Pages'e yayınlar: main'e her push'ta testler geçerse otomatik.
+# Gerekenler (bir kez): depo Settings → Pages → Source: "GitHub Actions"
+#   Settings → Secrets and variables → Actions → Variables sekmesi:
+#     SUPABASE_URL              = https://<proje>.supabase.co
+#     SUPABASE_PUBLISHABLE_KEY  = sb_publishable_... (ya da anon anahtarı)  — secret/service_role ASLA
+name: Web yayını
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - name: Web derlemesi
+        run: npm run build:web
+        env:
+          VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+      - name: Anahtar kontrolü
+        run: |
+          if [ -z "${{ vars.SUPABASE_URL }}" ] || [ -z "${{ vars.SUPABASE_PUBLISHABLE_KEY }}" ]; then
+            echo "::warning::SUPABASE_URL / SUPABASE_PUBLISHABLE_KEY değişkenleri boş; site 'sunucu bağlı değil' modunda yayınlanacak."
+          fi
+          if grep -rq "sb_secret_\|service_role" dist-web/assets; then echo "::error::Derlemede gizli anahtar var!"; exit 1; fi
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist-web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

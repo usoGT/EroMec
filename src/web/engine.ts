@@ -23,6 +23,10 @@ export interface Engine {
   refresh(): Promise<Me>;
   /** Çıkış: yerel veriyi boşaltır. */
   disconnect(): Promise<void>;
+  /** Yalnızca call() içinden: o ana kadar birikmiş değişiklikleri hemen gönderir (uzun işlemleri parçalamak için). */
+  checkpoint(): Promise<void>;
+  /** Sunucudan yeni bir çalışan numarası alır. */
+  nextEmployeeNo(): Promise<string>;
   readonly me: Me | null;
   readonly connected: boolean;
 }
@@ -73,6 +77,8 @@ export function createEngine(db: Db, remote: Remote): Engine {
   return {
     get me() { return me; },
     get connected() { return connected; },
+    checkpoint: () => (connected ? flush() : Promise.resolve()),
+    nextEmployeeNo: () => remote.nextEmployeeNo().catch((e) => { throw new Error(serverErrorMessage(e)); }),
     connect: () => enqueue(pull),
     refresh: () => enqueue(async () => {
       await flush();
