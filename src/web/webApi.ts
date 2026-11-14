@@ -9,6 +9,8 @@ import { UserError } from '../main/db/validation';
 import { API_METHODS, type EroMecApi } from '../shared/api';
 import { formatPeriod, todayIso } from '../shared/dates';
 import type { AppSettings, SiteFilter, ThemeMode } from '../shared/types';
+import type { CopyMeta, EroMecHost } from '../shared/host';
+import { READ_METHODS } from '../shared/api';
 import { getSupabase, SERVER_CONFIGURED } from '../renderer/lib/auth';
 import { installTracking, serverErrorMessage } from './sync';
 import { validateBackup } from '../main/db/backup';
@@ -29,6 +31,16 @@ export interface SyncController {
   siteShare(siteId: number, email: string): Promise<SiteMember>;
   /** Üyeyi şantiyeden çıkarır (sahip herkesi, üye yalnızca kendini) */
   siteUnshare(siteId: number, userId: string): Promise<void>;
+  /** Cihazdaki son kopyanın bilgisi (verilen hesaba aitse) */
+  copyInfo(accountId: string): Promise<CopyMeta | null>;
+  /** İnternet yokken son kopyayı salt okunur açar */
+  openCopy(accountId: string): Promise<Me>;
+  /** Son kopya salt okunur açık mı */
+  readonly readOnly: boolean;
+  /** Masaüstü: bu bilgisayardaki eski (çevrimdışı) verinin aktarılabilir olup olmadığı */
+  legacyAvailable(): Promise<boolean>;
+  /** Masaüstü: bu bilgisayardaki eski veriyi hesaba aktarır; sonuç özeti döner (vazgeçilirse null) */
+  importLegacy(): Promise<string | null>;
 }
 
 export interface SiteMember { userId: string; email: string; fullName: string; isOwner: boolean }
@@ -126,6 +138,40 @@ async function idbPut(bytes: Uint8Array): Promise<void> {
   });
 }
 
+async function idbGetKey<T>(key: string): Promise<T | undefined> {
+  const d = await idb();
+  return new Promise((resolve, reject) => {
+    const req = d.transaction(STORE).objectStore(STORE).get(key);
+    req.onsuccess = () => resolve(req.result as T | undefined);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function idbSet(entries: [string, unknown][], remove: string[] = []): Promise<void> {
+  const d = await idb();
+  return new Promise((resolve, reject) => {
+    const tx = d.transaction(STORE, 'readwrite');
+    for (const [k, v] of entries) tx.objectStore(STORE).put(v, k);
+    for (const k of remove) tx.objectStore(STORE).delete(k);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+/** Tarayıcı/telefon: son kopya IndexedDB'de durur (çıkışta silinir). */
+const browserHost: EroMecHost = {
+  desktop: false,
+  saveCopy: async (bytes, meta) => {
+    await idbSet([['son-kopya', bytes], ['son-kopya-meta', meta]]);
+    return {};
+  },
+  loadCopy: async () => {
+    const [bytes, meta] = await Promise.all([idbGetKey<Uint8Array>('son-kopya'), idbGetKey<CopyMeta>('son-kopya-meta')]);
+    return bytes && meta ? { bytes, meta } : null;
+  },
+  clearCopy: () => idbSet([], ['son-kopya', 'son-kopya-meta']),
+};
+
 function safeFileName(s: string): string {
   return s.replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').trim().slice(0, 80) || 'Rapor';
 }
@@ -205,8 +251,8 @@ export async function installWebApi(): Promise<void> {
   }
 
   /** Çevrimiçi sürüm: masaüstü yedeğindeki verileri hesaba (sunucuya) ekler; mevcut veriler silinmez. */
-  const importToServer = async (eng: Engine, file: File) => {
-    const bytes = new Uint8Array(await file.arrayBuffer());
+  const importToServer = async (eng: Engine, fileName: string, bytes: Uint8Array) => {
+    const file = { name: fileName };
     const clean = validateBackup(db, bytes);
     const fp = await fingerprintOf(bytes);
     const state = importState(db, fp);
@@ -250,6 +296,23 @@ Tekrar aktarılırsa yarıda kalan kısımdaki bazı kayıtlar (gider, mesai) ç
   };
 
   type Handler = (arg: any) => unknown | Promise<unknown>;
+  const host: EroMecHost = window.eromecHost ?? browserHost;
+  // Son kopya: her değişiklikten kısa süre sonra (ve bağlanınca) cihaza yazılır.
+  let copyTimer: ReturnType<typeof setTimeout> | null = null;
+  const saveCopyNow = async () => {
+    if (copyTimer) clearTimeout(copyTimer);
+    copyTimer = null;
+    if (!engine?.connected || !engine.me) return;
+    try {
+      await host.saveCopy(db.exportBytes(), { savedAt: new Date().toISOString(), me: engine.me });
+    } catch (e) {
+      console.error('[EroMec] son kopya yazılamadı:', e);
+    }
+  };
+  const scheduleCopy = () => {
+    if (copyTimer) clearTimeout(copyTimer);
+    copyTimer = setTimeout(() => void saveCopyNow(), 2000);
+  };
   const extra: Partial<Record<keyof EroMecApi, Handler>> = {
     reportExportCsv: async (a: { from: string; to: string; title: string } & SiteFilter) => {
       const { buildReportCsv } = await import('../main/db/export');
@@ -294,7 +357,7 @@ Tekrar aktarılırsa yarıda kalan kısımdaki bazı kayıtlar (gider, mesai) ç
     backupRestore: async () => {
       const file = await pickFile('.db,.sqlite,.sqlite3');
       if (!file) return { restored: false };
-      if (engine) return importToServer(engine, file);
+      if (engine) return importToServer(engine, file.name, new Uint8Array(await file.arrayBuffer()));
       if (!window.confirm(`Mevcut bütün verilerin üzerine yazılacak.\n\nSeçilen yedek: ${file.name}\n\nŞu anki veriler önce güvenlik amacıyla indirilecek. Devam edilsin mi?`)) {
         return { restored: false };
       }
@@ -328,7 +391,10 @@ Tekrar aktarılırsa yarıda kalan kısımdaki bazı kayıtlar (gider, mesai) ç
     if (!handler) throw new Error(`İşleyici eksik: ${name}`);
     api[name] = async (arg?: unknown) => {
       try {
-        return engine ? await engine.call(name, () => handler(arg)) : await handler(arg);
+        if (!engine) return await handler(arg);
+        const result = await engine.call(name, () => handler(arg));
+        if (!READ_METHODS.has(name)) scheduleCopy();
+        return result;
       } catch (err) {
         if (err instanceof UserError) throw new Error(err.message);
         console.error(`[EroMec] ${name} hatası:`, err);
@@ -341,6 +407,48 @@ Tekrar aktarılırsa yarıda kalan kısımdaki bazı kayıtlar (gider, mesai) ç
   window.eromec = Object.freeze(api) as unknown as EroMecApi;
   const e = engine;
   window.eromecSync = e
-    ? { online: true, get me() { return e.me; }, connect: () => e.connect(), refresh: () => e.refresh(), disconnect: () => e.disconnect(), ...siteApi }
-    : { online: false, me: null, connect: offline, refresh: offline, disconnect: () => Promise.resolve(), siteMembers: offline, siteShare: offline, siteUnshare: offline };
+    ? {
+      online: true,
+      get me() { return e.me; },
+      get readOnly() { return e.readOnly; },
+      connect: async () => {
+        const me = await e.connect();
+        await saveCopyNow();
+        return me;
+      },
+      refresh: async () => {
+        const me = await e.refresh();
+        await saveCopyNow();
+        return me;
+      },
+      disconnect: async () => {
+        if (copyTimer) clearTimeout(copyTimer);
+        copyTimer = null;
+        await e.disconnect();
+        await host.clearCopy().catch((err) => console.error('[EroMec] son kopya silinemedi:', err));
+      },
+      copyInfo: async (accountId) => {
+        const c = await host.loadCopy().catch(() => null);
+        return c && c.meta.me.id === accountId ? c.meta : null;
+      },
+      openCopy: async (accountId) => {
+        const c = await host.loadCopy();
+        if (!c || c.meta.me.id !== accountId) throw new Error('Bu cihazda bu hesaba ait bir kopya yok.');
+        return e.openCopy(c.bytes, c.meta.me);
+      },
+      legacyAvailable: async () => !!(await host.legacyDb?.().catch(() => null)),
+      importLegacy: async () => {
+        const bytes = await host.legacyDb?.();
+        if (!bytes) throw new Error('Bu bilgisayarda aktarılacak eski veri bulunamadı.');
+        const r = await e.call('backupRestore', () => importToServer(e, 'Bu bilgisayardaki eski veriler', bytes));
+        await saveCopyNow();
+        return r.imported ?? null;
+      },
+      ...siteApi,
+    }
+    : {
+      online: false, me: null, readOnly: false, connect: offline, refresh: offline, disconnect: () => Promise.resolve(),
+      siteMembers: offline, siteShare: offline, siteUnshare: offline, copyInfo: async () => null, openCopy: offline,
+      legacyAvailable: async () => false, importLegacy: offline,
+    };
 }

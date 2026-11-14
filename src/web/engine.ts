@@ -2,7 +2,9 @@
 // sunucu reddederse yerel veriyi sunucudakiyle yeniden eşitler. Tarayıcıya bağlı değildir (testte Node'da çalışır).
 import type { Db } from '../main/db/connection';
 import { setReservedEmployeeNo } from '../main/db/employees';
-import { clearChanges, collectChanges, loadSnapshot, serverErrorMessage, setTracking, type ChangeSet, type Snapshot } from './sync';
+import { READ_METHODS, type EroMecApi } from '../shared/api';
+import { UserError } from '../main/db/validation';
+import { clearChanges, collectChanges, installTracking, loadSnapshot, serverErrorMessage, setTracking, type ChangeSet, type Snapshot } from './sync';
 
 export interface Me { id: string; email: string; fullName: string; role: 'admin' | 'chief'; siteIds: number[] }
 export interface PullResult { data: Snapshot; me: Me | null; ids: Record<string, number> }
@@ -27,15 +29,22 @@ export interface Engine {
   checkpoint(): Promise<void>;
   /** Sunucudan yeni bir çalışan numarası alır. */
   nextEmployeeNo(): Promise<string>;
+  /** İnternet yokken: cihazdaki son kopyayı salt okunur açar (yalnızca okuma işlemleri çalışır). */
+  openCopy(bytes: Uint8Array, me: Me): Promise<Me>;
   readonly me: Me | null;
   readonly connected: boolean;
+  /** Son kopya salt okunur açık */
+  readonly readOnly: boolean;
 }
+
+export const READ_ONLY_MESSAGE = 'İnternet bağlantısı yok: veriler son kopyadan salt okunur açıldı. Değişiklik yapmak için internete bağlanıp “Tekrar bağlan”a basın.';
 
 export function createEngine(db: Db, remote: Remote): Engine {
   // Boş (yalnızca varsayılan satırların olduğu) veritabanının kopyası: çıkışta buna dönülür.
   const blank = db.exportBytes();
   let me: Me | null = null;
   let connected = false;
+  let readOnly = false;
   let stale = false; // yerel veri sunucudan sapmış olabilir; bir sonraki işlemden önce yeniden indirilir
   let chain: Promise<unknown> = Promise.resolve();
 
@@ -50,12 +59,14 @@ export function createEngine(db: Db, remote: Remote): Engine {
     try {
       res = await remote.pull();
     } catch (e) {
-      throw new Error(serverErrorMessage(e));
+      const msg = serverErrorMessage(e);
+      throw new Error(/ulaşılamadı/.test(msg) ? 'Sunucuya ulaşılamadı. İnternet bağlantınızı kontrol edin.' : msg);
     }
     if (!res.me) throw new Error('Hesap profili bulunamadı. Çıkış yapıp tekrar giriş yapın.');
     loadSnapshot(db, res.data, res.ids);
     me = res.me;
     connected = true;
+    readOnly = false;
     stale = false;
     return me;
   };
@@ -77,6 +88,17 @@ export function createEngine(db: Db, remote: Remote): Engine {
   return {
     get me() { return me; },
     get connected() { return connected; },
+    get readOnly() { return readOnly; },
+    openCopy: (bytes, owner) => enqueue(async () => {
+      db.replaceWith(bytes);
+      installTracking(db); // eski bir kopyada izleme tabloları olmayabilir
+      setTracking(db, false);
+      me = owner;
+      connected = false;
+      stale = false;
+      readOnly = true;
+      return owner;
+    }),
     checkpoint: () => (connected ? flush() : Promise.resolve()),
     nextEmployeeNo: () => remote.nextEmployeeNo().catch((e) => { throw new Error(serverErrorMessage(e)); }),
     connect: () => enqueue(pull),
@@ -86,12 +108,17 @@ export function createEngine(db: Db, remote: Remote): Engine {
     }),
     disconnect: () => enqueue(async () => {
       connected = false;
+      readOnly = false;
       me = null;
       stale = false;
       db.replaceWith(blank);
       setTracking(db, false);
     }),
     call: (name, fn) => enqueue(async () => {
+      if (readOnly) {
+        if (!READ_METHODS.has(name as keyof EroMecApi)) throw new UserError(READ_ONLY_MESSAGE);
+        return fn();
+      }
       if (!connected) return fn();
       if (stale) await pull();
       if (name === 'employeeCreate') setReservedEmployeeNo(await remote.nextEmployeeNo().catch((e) => { throw new Error(serverErrorMessage(e)); }));

@@ -5,10 +5,17 @@ import { Db } from './db/connection';
 import { migrate } from './db/migrations';
 import { createService } from './db/service';
 import { registerIpc } from './ipc';
+import { registerHost } from './host';
+import { dailyBackup } from './autoBackup';
 
 const DEV_URL = process.env.VITE_DEV_SERVER_URL;
+/** Derlemeye gömülen Supabase adresi: boşsa uygulama tamamen çevrimdışıdır (veriler yalnızca bu PC'de). */
+const SERVER_URL = (process.env.EROMEC_SUPABASE_URL ?? '').replace(/\/+$/, '');
 
 app.setName('EroMec');
+// Veri klasörü verilirse (testler, taşınabilir kullanım) tarayıcı profili (oturum, depolama) da oraya gider;
+// böylece kurulu uygulamanın profiline dokunulmaz.
+if (process.env.EROMEC_DATA_DIR) app.setPath('userData', process.env.EROMEC_DATA_DIR);
 app.commandLine.appendSwitch('lang', 'tr');
 if (process.platform === 'win32') app.setAppUserModelId('com.eroglumechanic.eromec');
 
@@ -56,12 +63,14 @@ function createWindow() {
   mainWindow.on('closed', () => (mainWindow = null));
 }
 
-/** Uygulama tamamen çevrim dışı çalışır: yerel dosyalar dışındaki bütün ağ istekleri engellenir. */
+/** Yerel dosyalar ve (çevrimiçi derlemede) Supabase sunucusu dışındaki bütün ağ istekleri engellenir. */
 function blockNetwork() {
+  const server = SERVER_URL ? [`${SERVER_URL}/`, `${SERVER_URL.replace(/^http/, 'ws')}/`] : [];
   session.defaultSession.webRequest.onBeforeRequest((details, callback) => {
     const u = details.url;
     const allowed =
       u.startsWith('file:') || u.startsWith('data:') || u.startsWith('devtools:') || u.startsWith('blob:') ||
+      server.some((p) => u.startsWith(p)) ||
       (!!DEV_URL && (u.startsWith(DEV_URL) || u.startsWith(DEV_URL.replace(/^http/, 'ws'))));
     callback({ cancel: !allowed });
   });
@@ -79,6 +88,20 @@ async function bootstrap() {
     const service = createService(db);
     nativeTheme.themeSource = service.settingsGet().theme;
     registerIpc(service, { isTrustedUrl, backupDir: path.join(dataDir, 'yedekler') });
+    registerHost({ dataDir, legacy: db, isTrustedUrl });
+    if (!SERVER_URL) {
+      // Çevrimdışı masaüstü: her gün ilk açılışta PC'ye otomatik yedek (son 30 gün); uygulama açık kalırsa saatte bir kontrol.
+      const autoDir = path.join(dataDir, 'yedekler', 'otomatik');
+      const daily = () => {
+        try {
+          dailyBackup(autoDir, db.exportBytes());
+        } catch (e) {
+          console.error('[EroMec] otomatik yedek alınamadı:', e);
+        }
+      };
+      daily();
+      setInterval(daily, 60 * 60 * 1000).unref();
+    }
     app.on('before-quit', () => db.close());
   } catch (err) {
     dialog.showErrorBox('EroMec başlatılamadı', `Veritabanı açılamadı:\n${dbPath}\n\n${(err as Error).message}`);

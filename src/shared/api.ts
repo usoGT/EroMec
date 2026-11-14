@@ -90,4 +90,14 @@ export const API_METHODS: (keyof EroMecApi)[] = [
   'settingsGet', 'settingsSave', 'backupCreate', 'backupRestore', 'dbInfo',
 ];
 
+/** Veriyi değiştirmeyen işlemler: internet yokken açılan son kopyada yalnızca bunlar çalışır. */
+export const READ_METHODS: ReadonlySet<keyof EroMecApi> = new Set<keyof EroMecApi>([
+  'employeesList', 'employeeGet', 'overtimeList', 'overtimeTotals', 'companiesList', 'sitesList',
+  'calendarMonth', 'dayDetail', 'attendanceMonth', 'attendanceExport', 'attendanceStatusesList',
+  'payrollMonth', 'payrollExport', 'categoriesList', 'expensesList', 'dashboard', 'summary', 'activityList',
+  'reportExportCsv', 'reportExportPdf', 'settingsGet', 'backupCreate', 'dbInfo',
+]);
+
 export const IPC_PREFIX = 'eromec:';
+/** Masaüstü "host" kanalları (son kopya, otomatik yedek) */
+export const HOST_PREFIX = 'eromec-host:';

@@ -19,9 +19,10 @@
 - [ ] KULLANICI: İlk gerçek giriş denemesi (kayıt ol, giriş yap, veri gir, masaüstü yedeğini aktar)
 
 ## Faz 4 – Masaüstü + PC yedeği
-- [ ] Masaüstü uygulaması da giriş yapıp Supabase'e bağlansın
-- [ ] Her açılışta ve günde bir PC'ye otomatik tarihli yedek (son 30 gün)
-- [ ] İnternet yokken son kopyadan salt okunur açılış
+- [x] Masaüstü uygulaması da giriş yapıp Supabase'e bağlanır (derlemede `.env.web` varsa; yoksa eskisi gibi tamamen çevrimdışı)
+- [x] Masaüstünde "Bu bilgisayardaki eski verileri aktar" (Ayarlar): eski çevrimdışı veri tek tıkla hesaba
+- [x] Her gün ilk açılışta PC'ye otomatik tarihli yedek, son 30 gün (`yedekler/otomatik`, `src/main/autoBackup.ts`)
+- [x] İnternet yokken son kopyadan salt okunur açılış (masaüstünde dosya, tarayıcıda IndexedDB; çıkışta silinir)
 
 ## Faz 5 – Telefon uygulamaları
 - [ ] Capacitor ile Android APK

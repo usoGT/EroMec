@@ -10,7 +10,7 @@ Eroğlu Mechanic için personel, puantaj, bordro, mesai ve gider takibi. Arayüz
 
 ## Yapı
 - `src/main/db/*` – bütün iş mantığı (sql.js/SQLite). Hem masaüstünde hem tarayıcıda aynı kod çalışır.
-- `src/main` – Electron ana süreç (masaüstü, çevrimdışı, veriler PC'de).
+- `src/main` – Electron ana süreç. Derlemede Supabase değerleri varsa (`.env.web` ya da `VITE_SUPABASE_*` ortam değişkenleri, `scripts/server-env.mjs`) masaüstü de girişle çalışır ve arayüz web motorunu (`src/web`) kullanır; yoksa veriler PC'deki dosyada, IPC ile (`window.eromecDesktop`). `src/main/host.ts`: son kopya + günlük otomatik yedek. `EROMEC_DATA_DIR` verilirse Electron profili de oraya gider.
 - `src/renderer` – React + Tailwind arayüz. Telefonda (<768px) alt menü ve kart listeler (`useIsMobile`).
 - `src/web` – tarayıcı/telefon sürümü: `webApi.ts` (window.eromec), `engine.ts` + `sync.ts` (Supabase eşitleme).
 - `supabase/schema.sql` + `sync.sql` + `uyelik.sql` + `paylasim.sql` (bu sırayla çalışır; `tests/pg.ts` hepsini PGlite'ta kurar) – sunucu şeması, RLS ve eşitleme işlevleri. Proje ref: `bpaeriysvjwhvyszjoxh`.
@@ -19,7 +19,7 @@ Eroğlu Mechanic için personel, puantaj, bordro, mesai ve gider takibi. Arayüz
 - Para kuruş (tam sayı), tarih ekranda gg.aa.yyyy, hafta Pazartesi başlar.
 
 ## Komutlar
-- `npm test` (vitest; sunucu SQL'i de `tests/server-sql.test.ts` ile PGlite'ta denenir) · `npm run build` (masaüstü) · `xvfb-run -a npx playwright test` (e2e)
+- `npm test` (vitest; sunucu SQL'i de `tests/server-sql.test.ts` ile PGlite'ta denenir) · `npm run build` (masaüstü) · `xvfb-run -a npx playwright test` (e2e; çevrimdışı derleme ister: `.env.web` varsa `EROMEC_OFFLINE=1` ile derle)
 - `npm run dev:web` / `npm run build:web` – tarayıcı sürümü (port 5180, `.env.web` gerekir)
 - Değişiklikten sonra: typecheck + vitest + e2e geçmeli, sonra commit + push.
 

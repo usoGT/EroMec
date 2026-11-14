@@ -7,10 +7,15 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 const URL = (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.trim() ?? '';
 const KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined)?.trim() ?? '';
 
-/** Hesap özelliği bu derlemede var mı (yalnızca tarayıcı/telefon sürümü) */
-export const ACCOUNTS_ENABLED = import.meta.env.MODE === 'web';
-/** Sunucu adresi ve anahtarı girilmiş mi */
-export const SERVER_CONFIGURED = ACCOUNTS_ENABLED && URL !== '' && KEY !== '';
+/** Sunucu adresi ve anahtarı girilmiş mi (masaüstünde de: o zaman masaüstü de girişle çalışır) */
+export const SERVER_CONFIGURED = URL !== '' && KEY !== '';
+/** Hesap düğmesi görünsün mü: tarayıcı/telefon sürümünde her zaman, masaüstünde sunucu varsa */
+export const ACCOUNTS_ENABLED = import.meta.env.MODE === 'web' || SERVER_CONFIGURED;
+/** Onay / şifre yenileme maillerinin döneceği adres. Masaüstünde (file://) web sitesine döner. */
+export const SITE_URL = (import.meta.env.VITE_SITE_URL as string | undefined)?.trim() || 'https://usogt.github.io/EroMec/';
+/** Telefon uygulaması (Capacitor) içinde mi */
+export const isNativeApp = () => !!(window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.();
+const redirectUrl = () => (/^https?:/.test(window.location.protocol) && !isNativeApp() ? window.location.origin + window.location.pathname : SITE_URL);
 
 let clientPromise: Promise<SupabaseClient> | null = null;
 /** Supabase istemcisi yalnızca gerektiğinde yüklenir. */
@@ -105,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = useCallback(async (fullName: string, email: string, password: string) => {
     const sb = await getSupabase();
-    const { data, error } = await sb.auth.signUp({ email, password, options: { data: { full_name: fullName }, emailRedirectTo: window.location.origin + window.location.pathname } });
+    const { data, error } = await sb.auth.signUp({ email, password, options: { data: { full_name: fullName }, emailRedirectTo: redirectUrl() } });
     if (error) throw error;
     // Aynı e-posta zaten kayıtlıysa Supabase hata vermez, kimliksiz bir kullanıcı döndürür.
     if (data.user && data.user.identities?.length === 0) throw new Error('user already exists');
@@ -114,7 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const resetPassword = useCallback(async (email: string) => {
     const sb = await getSupabase();
-    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + window.location.pathname });
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: redirectUrl() });
     if (error) throw error;
   }, []);
 

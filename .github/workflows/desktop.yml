@@ -1,0 +1,30 @@
+# Windows kurulum dosyasını (EroMec-Kurulum-x.y.z.exe) derler. Actions → "Masaüstü kurulumu" → Run workflow,
+# bitince sayfanın altındaki "EroMec-Kurulum" dosyasını indir. Supabase değişkenleri doluysa masaüstü de girişle çalışır.
+name: Masaüstü kurulumu
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Kurulum dosyası
+        run: npm run dist:win
+        env:
+          VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: EroMec-Kurulum
+          path: release/EroMec-Kurulum-*.exe
+          retention-days: 30

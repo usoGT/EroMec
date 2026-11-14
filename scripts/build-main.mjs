@@ -1,5 +1,6 @@
 // Ana süreç (main) ve preload betiğini esbuild ile derler.
 import { build, context } from 'esbuild';
+import { serverEnv } from './server-env.mjs';
 
 const watch = process.argv.includes('--watch');
 
@@ -11,6 +12,8 @@ const common = {
   sourcemap: watch ? 'inline' : false,
   external: ['electron', 'sql.js', 'exceljs'],
   logLevel: 'info',
+  // Ana süreç ağ izni için Supabase adresini bilir (boşsa uygulama tamamen çevrimdışı çalışır).
+  define: { 'process.env.EROMEC_SUPABASE_URL': JSON.stringify(serverEnv().url) },
 };
 
 const targets = [

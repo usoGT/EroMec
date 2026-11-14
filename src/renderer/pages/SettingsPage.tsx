@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Monitor } from 'lucide-react';
 import { DatabaseBackup, Plus, RotateCcw, Save, Upload } from 'lucide-react';
 import type { Category } from '../../shared/types';
 import { api, errorMessage } from '../lib/api';
@@ -13,7 +14,29 @@ type Kind = keyof typeof KIND_LABEL;
 
 export default function SettingsPage() {
   const { settings, reloadSettings, toast, showError, money } = useApp();
-  const { me, refresh } = useSession();
+  const { me, refresh, readOnly } = useSession();
+  const [legacy, setLegacy] = useState(false);
+  const [autoDir, setAutoDir] = useState<string | null>(null);
+  useEffect(() => {
+    if (me && !readOnly) void window.eromecSync?.legacyAvailable().then(setLegacy).catch(() => setLegacy(false));
+    void window.eromecHost?.backupDir?.().then(setAutoDir).catch(() => undefined);
+  }, [me, readOnly]);
+
+  const importLegacy = async () => {
+    setBusy(true);
+    try {
+      const r = await window.eromecSync!.importLegacy();
+      if (r) {
+        toast(r);
+        setLegacy(false);
+        await refresh();
+      }
+    } catch (e) {
+      showError(e);
+    } finally {
+      setBusy(false);
+    }
+  };
   const [form, setForm] = useState(settings);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -135,6 +158,11 @@ export default function SettingsPage() {
         </p>
         <div className="flex flex-wrap gap-2">
           <button className="btn-primary" onClick={() => void backup()} disabled={busy}><DatabaseBackup size={16} /> Yedek al</button>
+          {legacy && (
+            <button className="btn-secondary" data-testid="import-legacy" onClick={() => void importLegacy()} disabled={busy}>
+              <Monitor size={16} /> Bu bilgisayardaki eski verileri aktar
+            </button>
+          )}
           <button className="btn-secondary" data-testid="backup-restore" onClick={() => void restore()} disabled={busy}>
             {me ? <><Upload size={16} /> Masaüstü yedeğini aktar</> : <><RotateCcw size={16} /> Yedekten geri yükle</>}
           </button>
@@ -144,6 +172,11 @@ export default function SettingsPage() {
             ? 'Masaüstü uygulamasından aldığınız yedek dosyasındaki (.db) bütün kayıtlar hesabınıza eklenir; mevcut veriler silinmez. Aynı yedek iki kez aktarılamaz.'
             : 'Geri yükleme mevcut verilerin üzerine yazar; işlemden önce onay istenir ve mevcut verilerin otomatik bir kopyası “yedekler” klasörüne kaydedilir.'}
         </p>
+        {autoDir && (
+          <p className="mt-2 break-all text-xs text-slate-500">
+            Otomatik yedek: her gün ilk açılışta bu bilgisayara alınır, son 30 gün saklanır — <span className="font-mono">{autoDir}</span>
+          </p>
+        )}
         {dbInfo && (
           <p className="mt-2 break-all text-xs text-slate-500">
             Veritabanı dosyası: <span className="font-mono">{dbInfo.path}</span> · Şema sürümü: {dbInfo.schemaVersion}
