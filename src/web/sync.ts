@@ -101,6 +101,46 @@ export function loadSnapshot(db: Db, data: Snapshot, ids: Record<string, number>
   setTracking(db, true);
 }
 
+/**
+ * Artımlı indirme: sunucuda son indirmeden beri değişen satırları ve silinenleri yerel veriye işler.
+ * Yerelde zaten aynısı olan satırlar sayılmaz; gerçekten değişen satır sayısını döndürür
+ * (0 ise ekranın yenilenmesine gerek yoktur — ör. kendi gönderdiğimiz değişikliğin geri gelmesi).
+ */
+export function applyIncremental(db: Db, data: Snapshot, deletes: { t: string; pk: string }[]): number {
+  let changed = 0;
+  setTracking(db, false);
+  db.exec('PRAGMA foreign_keys = OFF');
+  try {
+    db.tx(() => {
+      for (const d of deletes) {
+        const def = SYNC_TABLES.find((t) => t.name === d.t);
+        if (!def) continue;
+        db.run(`DELETE FROM ${def.name} WHERE CAST(${def.pk} AS TEXT) = ?`, [String(d.pk)]);
+        changed += db.get<{ n: number }>('SELECT changes() AS n')!.n;
+      }
+      for (const { name, pk } of SYNC_TABLES) {
+        const rows = data[name];
+        if (!rows?.length) continue;
+        const cols = columnsOf(db, name);
+        const updates = cols.filter((c) => c !== pk).map((c) => `${c} = excluded.${c}`).join(', ');
+        const sql = `INSERT INTO ${name} (${cols.join(', ')}) VALUES (${cols.map(() => '?').join(', ')}) ON CONFLICT(${pk}) DO ${updates ? `UPDATE SET ${updates}` : 'NOTHING'}`;
+        for (const r of rows) {
+          const values = cols.map((c) => toLocal(c, r[c]));
+          const cur = db.get<Row>(`SELECT * FROM ${name} WHERE ${pk} = ?`, [values[cols.indexOf(pk)]]);
+          if (cur && cols.every((c, i) => (cur[c] ?? null) === values[i])) continue;
+          db.run(sql, values);
+          changed += 1;
+        }
+      }
+      db.run('DELETE FROM _sync_changes');
+    });
+  } finally {
+    db.exec('PRAGMA foreign_keys = ON');
+    setTracking(db, true);
+  }
+  return changed;
+}
+
 /** Son gönderimden beri değişen satırların şu anki hâli; değişiklik yoksa null. */
 export function collectChanges(db: Db): ChangeSet | null {
   const changed = db.all<{ tbl: string; pk: string }>('SELECT DISTINCT tbl, pk FROM _sync_changes');

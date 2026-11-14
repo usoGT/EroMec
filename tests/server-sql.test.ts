@@ -63,3 +63,45 @@ describe('şantiye paylaşma', () => {
     expect((await pg.as(friend, 'select * from sites')).length).toBe(0);
   });
 });
+
+describe('artımlı indirme (artimli.sql)', () => {
+  it('pull_since yalnızca değişenleri ve silinenleri verir, yetki geçerli', async () => {
+    const a = await pg.addUser('art-a@x.com', 'A');
+    const b = await pg.addUser('art-b@x.com', 'B');
+    const [c] = await pg.as<{ id: number }>(a, `insert into companies (name) values ('Artımlı Firma') returning id`);
+    const [s] = await pg.as<{ id: number }>(a, `insert into sites (company_id, name) values ($1, 'Ş-art') returning id`, [c.id]);
+    const full = await pg.rpc<{ serverTime: string; data: Record<string, unknown[]> }>(a, 'pull_all');
+    expect(full.data.sites.length).toBeGreaterThan(0);
+    expect(Object.keys(full.data.sites[0] as object)).not.toContain('_changed_at');
+
+    const t0 = full.serverTime;
+    const [e] = await pg.as<{ id: number }>(a, `insert into employees (employee_no, full_name, position, site_id) values ('P7001', 'Yeni', 'Usta', $1) returning id`, [s.id]);
+    await pg.as(a, `update sites set address = 'Yeni adres' where id = $1`, [s.id]);
+
+    const inc = await pg.rpc<{ data: Record<string, { id: number }[]>; deletes: unknown[]; me: { siteIds: number[] } }>(a, 'pull_since', { since: t0 });
+    expect(inc.data.employees.map((r) => r.id)).toEqual([e.id]);
+    expect(inc.data.sites.map((r) => r.id)).toEqual([s.id]);
+    expect(inc.data.companies).toBeUndefined(); // değişmedi
+    expect(inc.me.siteIds).toContain(s.id);
+
+    // Başka üye bu kayıtları göremez
+    const other = await pg.rpc<{ data: Record<string, unknown[]> }>(b, 'pull_since', { since: t0 });
+    expect(other.data.employees).toBeUndefined();
+
+    await pg.as(a, 'delete from employees where id = $1', [e.id]);
+    const del = await pg.rpc<{ deletes: { t: string; pk: string }[] }>(a, 'pull_since', { since: t0 });
+    expect(del.deletes).toContainEqual({ t: 'employees', pk: String(e.id) });
+
+    await expect(pg.rpc(a, 'pull_since', { since: '2020-01-01T00:00:00Z' })).rejects.toThrow(/baştan/);
+  });
+
+  it('apply_changes ile gelen satırlar da değişmiş sayılır; tablolar realtime yayınında', async () => {
+    const a = await pg.addUser('art-c@x.com', 'C');
+    const t0 = (await pg.rpc<{ serverTime: string }>(a, 'pull_all')).serverTime;
+    await pg.rpc(a, 'apply_changes', { changes: { deletes: [], upserts: [{ t: 'expense_categories', row: { id: 9101, name: 'Artımlı Kategori', kind: 'other', is_system: false, sort_order: 99 } }] } });
+    const inc = await pg.rpc<{ data: Record<string, { id: number }[]> }>(a, 'pull_since', { since: t0 });
+    expect(inc.data.expense_categories.map((r) => r.id)).toContain(9101);
+    const pub = await pg.db.query<{ tablename: string }>(`select tablename from pg_publication_tables where pubname = 'supabase_realtime'`);
+    expect(pub.rows.map((r) => r.tablename)).toEqual(expect.arrayContaining(['employees', 'attendance', 'site_members']));
+  });
+});

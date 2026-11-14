@@ -10,6 +10,7 @@
    2. `sync.sql` (veri eşitleme)
    3. `uyelik.sql` (üyelik kuralları)
    4. `paylasim.sql` (şantiye paylaşma)
+   5. `artimli.sql` (yalnızca değişenleri indirme + anlık güncelleme)
 
    Hepsini tekrar çalıştırmak güvenlidir (`schema.sql` hariç: o yalnızca ilk kurulumda).
 3. **Authentication → Sign In / Providers**: Email açık kalsın, **Confirm email** açık olsun
@@ -65,6 +66,7 @@ Supabase'in hazır mail servisi saatte yalnızca 2 mail gönderir; gerçek kulla
 - Giriş yapmadan uygulama açılmaz. Girişten sonra görme yetkin olan bütün kayıtlar cihaza indirilir.
 - Her kayıt işleminden sonra değişen satırlar tek paket hâlinde sunucuya gönderilir; sunucu reddederse
   (yetki yok, çakışma) cihazdaki değişiklik de geri alınır ve hata gösterilir.
-- Başka cihazda yapılan değişiklikler: uygulamaya geri dönünce (1 dakikadan eskiyse) ya da
-  Hesabım → **Verileri yenile** ile gelir.
+- Başka cihazda yapılan değişiklikler anında gelir (Realtime; `artimli.sql` kuruluysa). Ayrıca uygulamaya geri dönünce
+  (1 dakikadan eskiyse) ya da Hesabım → **Verileri yenile** ile. Her seferinde yalnızca değişen satırlar iner.
+- İnternet yokken uygulama cihazdaki son kopyayı salt okunur açar.
 - Çıkış yapınca cihazdaki veri silinir.

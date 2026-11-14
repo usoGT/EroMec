@@ -25,11 +25,20 @@
 - [x] İnternet yokken son kopyadan salt okunur açılış (masaüstünde dosya, tarayıcıda IndexedDB; çıkışta silinir)
 
 ## Faz 5 – Telefon uygulamaları
-- [ ] Capacitor ile Android APK
-- [ ] iPhone paketi, bulut derleme (Mac yok), TestFlight
-- [ ] Uygulama ikonu, açılış ekranı, gizlilik politikası / KVKK metni
+- [x] Capacitor ile Android projesi (`android/`) + APK iş akışı (`.github/workflows/android.yml`, imza anahtarı varsa .aab)
+- [x] iPhone projesi (`ios/`) + bulutta derleyip TestFlight'a yükleyen iş akışı (`ios.yml`; Apple hesabı olmadan denenemedi)
+- [x] Uygulama ikonu, açılış ekranı (`assets/`, `npm run mobile:assets`), web manifesti (ana ekrana ekle)
+- [x] Gizlilik politikası / KVKK metni: `src/renderer/public/gizlilik.html` → https://usogt.github.io/EroMec/gizlilik.html
+- [ ] KULLANICI: gizlilik metnindeki [FİRMA ADRESİ] ve [İLETİŞİM E-POSTASI] yerlerini doldur
+- [ ] KULLANICI: Play Console (25 $) / Apple Developer (99 $/yıl) hesapları ve GitHub Secrets (`docs/TELEFON.md`)
 
 ## Faz 6 – İyileştirme
-- [ ] Yalnızca değişen veriyi indirme (şu an her açılışta hepsi iniyor)
-- [ ] Anlık güncelleme (başka cihazdaki değişiklik kendiliğinden gelsin)
-- [ ] Telefonda PDF/Excel paylaşma
+- [x] Yalnızca değişen veriyi indirme (`supabase/artimli.sql`: `_changed_at`, `sync_deletes`, `pull_since`)
+- [x] Anlık güncelleme (Supabase Realtime; form açıkken bekler, kendi değişikliğin ekranı yenilemez)
+- [x] Telefonda PDF/Excel paylaşma (uygulamada paylaşma menüsü, telefon tarayıcısında Web Share; PDF telefonda dosya olarak üretilir)
+- [ ] KULLANICI: Supabase'de `artimli.sql` çalıştır
+
+## Sırada ne olabilir
+- Gerçek kullanımdan gelen geri bildirimler
+- Çalışan/kayıt arama, toplu Excel içe aktarma
+- Bildirimler (ör. ay sonu bordro hatırlatması)

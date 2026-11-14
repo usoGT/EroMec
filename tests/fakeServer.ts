@@ -12,35 +12,75 @@ export class FakeServer {
   pushes: ChangeSet[] = [];
   /** Verilirse paket bu hata ile reddedilir */
   reject: { code: string; message: string } | null = null;
+  /** Artımlı indirme (artimli.sql) açık mı */
+  incremental = false;
+  /** Sunucu saati: her değişiklikte 1 saniye ilerler */
+  clock = Date.parse('2026-11-01T08:00:00Z');
+  changedAt = new Map<string, number>();
+  deleted: { t: string; pk: string; at: number }[] = [];
+  pullSinceCalls = 0;
+  fullPulls = 0;
+  /** Kullanıcının şantiyeleri (paylaşım değişikliğini taklit etmek için) */
+  siteIds: number[] = [];
+
+  private tick() {
+    this.clock += 1000;
+    return this.clock;
+  }
 
   seed(db: Db) {
     for (const { name, pk } of SYNC_TABLES) {
-      for (const row of db.all<Row>(`SELECT * FROM ${name}`)) this.tables.get(name)!.set(String(row[pk]), rowToServer(name, row));
+      for (const row of db.all<Row>(`SELECT * FROM ${name}`)) this.set(name, String(row[pk]), rowToServer(name, row));
     }
   }
 
+  /** Başka bir cihaz/kişi sunucuda doğrudan değişiklik yapmış gibi */
+  set(table: string, pk: string, row: Row) {
+    this.tables.get(table)!.set(pk, { ...row });
+    this.changedAt.set(`${table}:${pk}`, this.tick());
+  }
+
+  remove(table: string, pk: string) {
+    if (this.tables.get(table)!.delete(pk)) this.deleted.push({ t: table, pk, at: this.tick() });
+  }
+
   remote(me: Me): Remote {
-    return {
+    const who = () => ({ ...me, siteIds: [...this.siteIds] });
+    const remote: Remote = {
       pull: async () => {
+        this.fullPulls += 1;
         const start = this.nextBlock;
         this.nextBlock += 1_000_000;
         const data = Object.fromEntries([...this.tables].map(([t, rows]) => [t, [...rows.values()].map((r) => ({ ...r }))]));
-        return { data, me, ids: Object.fromEntries(SYNC_TABLES.filter((t) => t.pk === 'id').map((t) => [t.name, start])) };
+        return {
+          data, me: who(), ids: Object.fromEntries(SYNC_TABLES.filter((t) => t.pk === 'id').map((t) => [t.name, start])),
+          serverTime: this.incremental ? new Date(this.clock).toISOString() : undefined,
+        };
       },
       push: async (changes) => {
         if (this.reject) throw this.reject;
         this.pushes.push(changes);
-        for (const d of changes.deletes) this.tables.get(d.t)!.delete(d.pk);
         for (const u of changes.upserts) {
           const pk = SYNC_TABLES.find((t) => t.name === u.t)!.pk;
-          this.tables.get(u.t)!.set(String(u.row[pk]), { ...u.row });
+          this.set(u.t, String(u.row[pk]), u.row);
         }
+        for (const d of changes.deletes) this.remove(d.t, d.pk);
       },
       nextEmployeeNo: async () => {
         const max = Math.max(0, ...[...this.tables.get('employees')!.values()].map((r) => Number(String(r.employee_no).slice(1)) || 0));
         return `P${String(max + 1).padStart(4, '0')}`;
       },
     };
+    if (this.incremental) {
+      remote.pullSince = async (since) => {
+        this.pullSinceCalls += 1;
+        const t = Date.parse(since);
+        const data = Object.fromEntries([...this.tables].map(([name, rows]) => [name,
+          [...rows.entries()].filter(([pk]) => (this.changedAt.get(`${name}:${pk}`) ?? 0) > t).map(([, r]) => ({ ...r }))]));
+        return { data, deletes: this.deleted.filter((d) => d.at > t).map(({ t: tb, pk }) => ({ t: tb, pk })), me: who(), serverTime: new Date(this.clock).toISOString() };
+      };
+    }
+    return remote;
   }
 }
 

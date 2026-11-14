@@ -1,0 +1,60 @@
+# iPhone: Mac olmadan bulutta derleyip TestFlight'a yükler (Actions → "iPhone (TestFlight)" → Run workflow).
+# Gerekenler (bkz. docs/TELEFON.md): Apple Developer üyeliği, App Store Connect'te "com.eroglumechanic.eromec" uygulaması ve
+# depo Secrets: APPLE_TEAM_ID, APPSTORE_API_KEY_ID, APPSTORE_API_ISSUER_ID, APPSTORE_API_PRIVATE_KEY (.p8 dosyasının içeriği).
+# İmza otomatik: Xcode, App Store Connect API anahtarıyla sertifika ve profili kendisi alır.
+# NOT: Apple hesabı olmadan denenemedi; ilk çalıştırmada küçük ayar gerekebilir.
+name: iPhone (TestFlight)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  testflight:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Web derlemesi
+        run: npm run build:web
+        env:
+          VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+      - run: npx cap sync ios
+      - name: API anahtarı
+        run: |
+          mkdir -p "$RUNNER_TEMP/keys"
+          echo "${{ secrets.APPSTORE_API_PRIVATE_KEY }}" > "$RUNNER_TEMP/keys/AuthKey.p8"
+      - name: Arşivle
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/EroMec.xcarchive" archive \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/keys/AuthKey.p8" \
+            -authenticationKeyID "${{ secrets.APPSTORE_API_KEY_ID }}" \
+            -authenticationKeyIssuerID "${{ secrets.APPSTORE_API_ISSUER_ID }}" \
+            DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}" CODE_SIGN_STYLE=Automatic \
+            MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="${{ github.run_number }}"
+      - name: TestFlight'a yükle
+        run: |
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>${{ secrets.APPLE_TEAM_ID }}</string>
+            <key>signingStyle</key><string>automatic</string>
+          </dict></plist>
+          PLIST
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/EroMec.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" -exportPath "$RUNNER_TEMP/export" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/keys/AuthKey.p8" \
+            -authenticationKeyID "${{ secrets.APPSTORE_API_KEY_ID }}" \
+            -authenticationKeyIssuerID "${{ secrets.APPSTORE_API_ISSUER_ID }}"

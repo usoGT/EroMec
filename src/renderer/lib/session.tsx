@@ -127,13 +127,54 @@ export function SessionGate({ children }: { children: ReactNode }) {
     }
   }, [online, accountId, reloadSettings, showError, copyAt, connect, toast]);
 
+  /** Sessiz yenileme (anlık bildirim, uygulamaya dönüş): yalnızca veri gerçekten değiştiyse sayfalar yeniden kurulur. */
+  const quietSync = useCallback(async () => {
+    if (!online || !accountId || copyAt) return;
+    try {
+      const m = await window.eromecSync!.refresh();
+      lastPull.current = Date.now();
+      setMe(m);
+      if (window.eromecSync!.lastRefreshChanged) {
+        await reloadSettings();
+        setVersion((v) => v + 1);
+      }
+    } catch (e) {
+      console.warn('[EroMec] arka plan yenileme:', e);
+    }
+  }, [online, accountId, copyAt, reloadSettings]);
+
+  // Anlık güncelleme: başka cihazdaki değişiklik gelince kısa bir beklemeden sonra (form açık değilse) çekilir.
+  useEffect(() => {
+    if (!online || state !== 'ready' || copyAt) return;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let off: (() => void) | null = null;
+    let closed = false;
+    const run = () => {
+      timer = null;
+      if (document.querySelector('[role="dialog"]') || document.visibilityState !== 'visible') {
+        timer = setTimeout(run, 4000); // form kapanınca / uygulamaya dönünce
+        return;
+      }
+      void quietSync();
+    };
+    void window.eromecSync!.onRemoteChange(() => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(run, 1500);
+    }).then((unsub) => (closed ? unsub() : (off = unsub))).catch((e) => console.warn('[EroMec] anlık güncelleme kurulamadı:', e));
+    return () => {
+      closed = true;
+      if (timer) clearTimeout(timer);
+      off?.();
+    };
+  }, [online, state, copyAt, quietSync]);
+
   // Uygulama öne gelince (başka uygulamadan dönünce) veriyi tazele; açık bir pencere/form varken dokunma.
   useEffect(() => {
     if (!online || state !== 'ready') return;
     const onVisible = () => {
       if (document.visibilityState !== 'visible' || Date.now() - lastPull.current < AUTO_REFRESH_MS) return;
       if (document.querySelector('[role="dialog"]')) return;
-      void refresh();
+      void (copyAt ? refresh() : quietSync());
     };
     document.addEventListener('visibilitychange', onVisible);
     // Salt okunur kopyadayken internet gelince kendiliğinden bağlan
@@ -145,7 +186,7 @@ export function SessionGate({ children }: { children: ReactNode }) {
       document.removeEventListener('visibilitychange', onVisible);
       window.removeEventListener('online', onOnline);
     };
-  }, [online, state, refresh, copyAt, connect]);
+  }, [online, state, refresh, copyAt, connect, quietSync]);
 
   if (!online) return <>{children}</>;
 

@@ -1,0 +1,56 @@
+# Android uygulaması (APK). Actions → "Android" → Run workflow; bitince "EroMec-Android" dosyasını indir,
+# telefona at ve kur (Ayarlar → "Bilinmeyen kaynaklardan yükleme"ye izin ver).
+# İmzalı sürüm (Play Store) için depo Secrets: ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD.
+name: Android
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+    branches: [main]
+    paths: ['android/**', 'capacitor.config.json', 'package.json', '.github/workflows/android.yml']
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    env:
+      # "if:" içinde secrets doğrudan kullanılamaz
+      HAS_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: android-actions/setup-android@v3
+      - run: npm ci
+      - run: npm test
+      - name: Web derlemesi
+        run: npm run build:web
+        env:
+          VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+      - run: npx cap sync android
+      - name: Anahtar deposu (varsa)
+        if: env.HAS_KEYSTORE == 'true'
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/eromec.keystore
+      - name: APK derle
+        working-directory: android
+        env:
+          EROMEC_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          EROMEC_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          EROMEC_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          if [ -f app/eromec.keystore ]; then ./gradlew assembleRelease bundleRelease -PversionCode=${{ github.run_number }}; else ./gradlew assembleDebug -PversionCode=${{ github.run_number }}; fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: EroMec-Android
+          path: |
+            android/app/build/outputs/apk/**/*.apk
+            android/app/build/outputs/bundle/**/*.aab
+          retention-days: 30

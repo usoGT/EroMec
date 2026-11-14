@@ -15,8 +15,9 @@ declare global {
 async function start() {
   if (SERVER_CONFIGURED || (import.meta.env.MODE === 'web' && !window.eromecDesktop)) {
     // Çevrimiçi (masaüstü ya da tarayıcı) ve tarayıcı/telefon sürümü: veritabanı sayfanın içinde çalışır.
-    const { installWebApi } = await import('../web/webApi');
+    const [{ installWebApi }, { setupNative }] = await Promise.all([import('../web/webApi'), import('../web/native')]);
     await installWebApi();
+    void setupNative().catch((e) => console.error('[EroMec] telefon kurulumu:', e));
   } else {
     // Çevrimdışı masaüstü: veriler bu bilgisayardaki dosyada, ana süreçte.
     window.eromec = window.eromecDesktop;

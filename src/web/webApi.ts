@@ -15,7 +15,8 @@ import { getSupabase, SERVER_CONFIGURED } from '../renderer/lib/auth';
 import { installTracking, serverErrorMessage } from './sync';
 import { validateBackup } from '../main/db/backup';
 import { fingerprintOf, importBackup, importState } from './importBackup';
-import { createEngine, type Engine, type Me, type PullResult, type Remote } from './engine';
+import { htmlToPdf, isTouchDevice, shareFile } from './native';
+import { createEngine, type Engine, type Me, type PullResult, type PullSinceResult, type Remote } from './engine';
 
 /** Arayüzün çevrimiçi durumu yönetmek için kullandığı uçlar (window.eromecSync) */
 export interface SyncController {
@@ -37,6 +38,10 @@ export interface SyncController {
   openCopy(accountId: string): Promise<Me>;
   /** Son kopya salt okunur açık mı */
   readonly readOnly: boolean;
+  /** Son refresh() ekranda görünen veriyi değiştirdi mi */
+  readonly lastRefreshChanged: boolean;
+  /** Başka cihazdaki değişiklikler için anlık bildirim; aboneliği bitiren işlev döner */
+  onRemoteChange(cb: () => void): Promise<() => void>;
   /** Masaüstü: bu bilgisayardaki eski (çevrimdışı) verinin aktarılabilir olup olmadığı */
   legacyAvailable(): Promise<boolean>;
   /** Masaüstü: bu bilgisayardaki eski veriyi hesaba aktarır; sonuç özeti döner (vazgeçilirse null) */
@@ -76,7 +81,21 @@ const supabaseRemote: Remote = {
     if (error) throw error;
     return String(data);
   },
+  pullSince: async (since) => {
+    const { data, error } = await (await getSupabase()).rpc('pull_since', { since });
+    if (error) throw error;
+    return data as PullSinceResult;
+  },
 };
+
+/** Sunucudaki herhangi bir değişiklikte (başka cihaz, paylaşım) haber verir. Aboneliği bitiren işlev döner. */
+async function subscribeChanges(onChange: () => void): Promise<() => void> {
+  const sb = await getSupabase();
+  const channel = sb.channel('eromec-degisiklikler')
+    .on('postgres_changes', { event: '*', schema: 'public' }, () => onChange())
+    .subscribe();
+  return () => void sb.removeChannel(channel);
+}
 
 /** Sunucu işlevlerinin kendi (Türkçe) hata mesajları olduğu gibi gösterilir. */
 const rpcError = (e: unknown) => {
@@ -200,6 +219,22 @@ function printHtml(html: string) {
   document.body.appendChild(frame);
 }
 
+/** Telefonda paylaşma menüsü, bilgisayarda indirme */
+async function deliver(name: string, data: string | Uint8Array, type: string) {
+  const bytes = typeof data === 'string' ? new TextEncoder().encode(data) : data;
+  if (!(await shareFile(name, bytes, type))) download(name, data, type);
+  return { saved: true, path: name };
+}
+
+/** PDF: bilgisayarda yazdırma penceresi ("PDF olarak kaydet"), telefonda PDF dosyası üretip paylaşma */
+async function deliverPdf(name: string, html: string) {
+  if (!isTouchDevice()) {
+    printHtml(html);
+    return { saved: true, path: 'yazdırma penceresi' };
+  }
+  return deliver(name, await htmlToPdf(html), 'application/pdf');
+}
+
 function pickFile(accept: string): Promise<File | null> {
   return new Promise((resolve) => {
     const input = document.createElement('input');
@@ -317,43 +352,28 @@ Tekrar aktarılırsa yarıda kalan kısımdaki bazı kayıtlar (gider, mesai) ç
     reportExportCsv: async (a: { from: string; to: string; title: string } & SiteFilter) => {
       const { buildReportCsv } = await import('../main/db/export');
       const data = service.reportData(a?.from, a?.to, String(a?.title ?? 'Rapor'), a);
-      const name = `${safeFileName(`EroMec ${data.title}`)}.csv`;
-      download(name, buildReportCsv(data), 'text/csv;charset=utf-8');
-      return { saved: true, path: name };
+      return deliver(`${safeFileName(`EroMec ${data.title}`)}.csv`, buildReportCsv(data), 'text/csv;charset=utf-8');
     },
     reportExportPdf: async (a: { from: string; to: string; title: string } & SiteFilter) => {
       const { buildReportHtml } = await import('../main/db/export');
       const data = service.reportData(a?.from, a?.to, String(a?.title ?? 'Rapor'), a);
-      printHtml(buildReportHtml(data));
-      return { saved: true, path: 'yazdırma penceresi' };
+      return deliverPdf(`${safeFileName(`EroMec ${data.title}`)}.pdf`, buildReportHtml(data));
     },
     attendanceExport: async (a: { month: string; format: 'xlsx' | 'pdf' } & SiteFilter) => {
       const m = await import('../main/db/attendance-export');
       const data = service.attendanceExportData(a?.month, a);
-      if (a?.format === 'pdf') {
-        printHtml(m.buildAttendanceHtml(data));
-        return { saved: true, path: 'yazdırma penceresi' };
-      }
-      const name = `${safeFileName(`Puantaj ${formatPeriod(data.month.month)}${scopeSuffix(data.scopeLabel)}`)}.xlsx`;
-      download(name, await m.buildAttendanceXlsx(data), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      return { saved: true, path: name };
+      const base = safeFileName(`Puantaj ${formatPeriod(data.month.month)}${scopeSuffix(data.scopeLabel)}`);
+      if (a?.format === 'pdf') return deliverPdf(`${base}.pdf`, m.buildAttendanceHtml(data));
+      return deliver(`${base}.xlsx`, await m.buildAttendanceXlsx(data), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     },
     payrollExport: async (a: { month: string; format: 'xlsx' | 'pdf' } & SiteFilter) => {
       const m = await import('../main/db/payroll-export');
       const data = service.payrollExportData(a?.month, a);
-      if (a?.format === 'pdf') {
-        printHtml(m.buildPayrollHtml(data));
-        return { saved: true, path: 'yazdırma penceresi' };
-      }
-      const name = `${safeFileName(`Bordro ${formatPeriod(data.payroll.month)}${scopeSuffix(data.scopeLabel)}`)}.xlsx`;
-      download(name, await m.buildPayrollXlsx(data), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      return { saved: true, path: name };
+      const base = safeFileName(`Bordro ${formatPeriod(data.payroll.month)}${scopeSuffix(data.scopeLabel)}`);
+      if (a?.format === 'pdf') return deliverPdf(`${base}.pdf`, m.buildPayrollHtml(data));
+      return deliver(`${base}.xlsx`, await m.buildPayrollXlsx(data), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     },
-    backupCreate: () => {
-      const name = `EroMec-Yedek-${todayIso()}.db`;
-      download(name, service.backupBytes(), 'application/octet-stream');
-      return { saved: true, path: name };
-    },
+    backupCreate: () => deliver(`EroMec-Yedek-${todayIso()}.db`, service.backupBytes(), 'application/octet-stream'),
     backupRestore: async () => {
       const file = await pickFile('.db,.sqlite,.sqlite3');
       if (!file) return { restored: false };
@@ -411,6 +431,8 @@ Tekrar aktarılırsa yarıda kalan kısımdaki bazı kayıtlar (gider, mesai) ç
       online: true,
       get me() { return e.me; },
       get readOnly() { return e.readOnly; },
+      get lastRefreshChanged() { return e.lastRefreshChanged; },
+      onRemoteChange: (cb) => subscribeChanges(cb),
       connect: async () => {
         const me = await e.connect();
         await saveCopyNow();
@@ -418,7 +440,7 @@ Tekrar aktarılırsa yarıda kalan kısımdaki bazı kayıtlar (gider, mesai) ç
       },
       refresh: async () => {
         const me = await e.refresh();
-        await saveCopyNow();
+        if (e.lastRefreshChanged) await saveCopyNow();
         return me;
       },
       disconnect: async () => {
@@ -447,7 +469,7 @@ Tekrar aktarılırsa yarıda kalan kısımdaki bazı kayıtlar (gider, mesai) ç
       ...siteApi,
     }
     : {
-      online: false, me: null, readOnly: false, connect: offline, refresh: offline, disconnect: () => Promise.resolve(),
+      online: false, me: null, readOnly: false, lastRefreshChanged: false, onRemoteChange: async () => () => undefined, connect: offline, refresh: offline, disconnect: () => Promise.resolve(),
       siteMembers: offline, siteShare: offline, siteUnshare: offline, copyInfo: async () => null, openCopy: offline,
       legacyAvailable: async () => false, importLegacy: offline,
     };
