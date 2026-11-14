@@ -1,0 +1,104 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Açık tema renkleri (RGB kanalları) */
+  :root {
+    --slate-50: 248 250 252; --slate-100: 241 245 249; --slate-200: 226 232 240; --slate-300: 203 213 225;
+    --slate-400: 148 163 184; --slate-500: 100 116 139; --slate-600: 71 85 105; --slate-700: 51 65 85;
+    --slate-800: 30 41 59; --slate-900: 15 23 42; --slate-950: 2 6 23;
+    --brand-50: 251 242 242; --brand-100: 246 225 225;
+    --surface: 255 255 255;
+    color-scheme: light;
+  }
+  /* Gece modu: gri skala ters çevrilir, kartlar ve kutular koyu yüzey rengini alır */
+  html.dark {
+    --slate-50: 36 36 36; --slate-100: 16 16 16; --slate-200: 46 46 46; --slate-300: 66 66 66;
+    --slate-400: 115 115 115; --slate-500: 163 163 163; --slate-600: 190 190 190; --slate-700: 212 212 212;
+    --slate-800: 229 229 229; --slate-900: 245 245 245; --slate-950: 250 250 250;
+    --brand-50: 58 22 22; --brand-100: 84 30 30;
+    --surface: 26 26 26;
+    color-scheme: dark; /* tarih seçici, açılır liste ve kaydırma çubukları da koyu olur */
+  }
+  html, body, #root { height: 100%; }
+  body { @apply bg-slate-100 text-slate-900 font-sans text-[14px] antialiased; }
+}
+
+@layer components {
+  .btn { @apply inline-flex items-center gap-1.5 rounded border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap; }
+  .btn-primary { @apply btn border-brand-600 bg-brand-600 text-white hover:bg-brand-700; }
+  .btn-secondary { @apply btn border-neutral-800 bg-surface text-slate-800 hover:border-red-600 hover:text-red-700; }
+  .btn-danger { @apply btn border-neutral-900 bg-neutral-900 text-white hover:border-red-700 hover:bg-red-700; }
+  .btn-link { @apply inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-sm text-red-700 hover:bg-brand-50; }
+  .btn-link-danger { @apply inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-sm text-red-600 hover:bg-red-50; }
+  .input { @apply w-full rounded border border-slate-300 bg-surface px-2.5 py-1.5 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100; }
+  .input-error { @apply border-red-500 focus:border-red-500 focus:ring-red-100; }
+  .label { @apply mb-1 block text-sm font-medium text-slate-700; }
+  .card { @apply rounded-md border border-slate-200 bg-surface; }
+
+  /* Excel benzeri tablo */
+  .grid-table { @apply w-full border-collapse text-sm; }
+  .grid-table th { @apply sticky top-0 z-10 border border-neutral-700 bg-neutral-900 px-2 py-1.5 text-left font-semibold text-white select-none; }
+  .grid-table td { @apply border border-slate-200 px-2 py-1 align-middle; }
+  .grid-table tbody tr:nth-child(even) { @apply bg-slate-50; }
+  .grid-table tbody tr:hover { @apply bg-brand-50; }
+  .grid-table tfoot td { @apply border border-slate-300 bg-slate-100 px-2 py-1.5 font-semibold; }
+  .cell-editable { @apply cursor-text; }
+  .cell-editable:hover { @apply outline outline-1 outline-brand-500/40; }
+}
+
+/* Gece modunda renkli kutu, rozet ve yazıların koyu zemine uygun tonları */
+html.dark .bg-surface { background-color: rgb(var(--surface)); }
+html.dark .bg-red-50 { background-color: rgb(127 29 29 / 0.35); }
+html.dark .bg-green-50 { background-color: rgb(20 83 45 / 0.4); }
+html.dark .bg-amber-50 { background-color: rgb(120 53 15 / 0.35); }
+html.dark .bg-green-100 { background-color: rgb(20 83 45 / 0.6); }
+html.dark .bg-amber-100 { background-color: rgb(120 53 15 / 0.55); }
+html.dark .hover\:bg-red-50:hover { background-color: rgb(127 29 29 / 0.35); }
+html.dark .border-red-300 { border-color: rgb(153 27 27); }
+html.dark .border-green-300 { border-color: rgb(22 101 52); }
+html.dark .text-red-600, html.dark .text-red-700, html.dark .text-red-800 { color: rgb(232 160 160); }
+html.dark .text-green-800 { color: rgb(134 239 172); }
+html.dark .text-amber-600, html.dark .text-amber-700, html.dark .text-amber-800 { color: rgb(252 211 77); }
+html.dark .text-brand-500, html.dark .text-brand-600, html.dark .text-brand-700 { color: rgb(232 160 160); }
+html.dark .btn-secondary { border-color: rgb(var(--slate-300)); }
+html.dark .btn-link { color: rgb(232 160 160); }
+
+/* ───────── Telefon (dar ekran) ───────── */
+@media (max-width: 767px) {
+  body { font-size: 15px; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
+  /* iOS, 16px'ten küçük yazılı kutuya dokununca sayfayı yakınlaştırır */
+  .input, .grid-table input, .grid-table select { font-size: 16px; }
+  .input { width: 100% !important; padding-top: 0.55rem; padding-bottom: 0.55rem; border-radius: 0.5rem; }
+  .btn, .btn-primary, .btn-secondary, .btn-danger { min-height: 42px; padding-left: 0.9rem; padding-right: 0.9rem; border-radius: 0.5rem; }
+  .btn-link, .btn-link-danger { min-height: 34px; padding: 0.25rem 0.5rem; }
+  .card { border-radius: 0.75rem; }
+  input[type='checkbox'] { width: 1.15rem; height: 1.15rem; }
+  /* Geniş tablolar yana kaydırılır; hücreler satır kırmaz */
+  .grid-table th, .grid-table td { white-space: nowrap; }
+  .tabular-nums { white-space: nowrap; }
+}
+
+/* Telefon kart listesi (DataTable'ın dar ekran görünümü) */
+.row-card { @apply card mb-2 w-full overflow-hidden text-sm; border-collapse: separate; border-spacing: 0; }
+.row-card th { @apply w-[38%] px-3 py-1.5 text-left align-top text-xs font-medium text-slate-500; }
+.row-card td { @apply px-3 py-1.5 text-right align-middle; }
+.row-card tr + tr th, .row-card tr + tr td { @apply border-t border-slate-100; }
+.row-card tr.row-card-title td { @apply border-l-4 border-red-600 bg-slate-50 py-2 text-left text-[15px] font-semibold; }
+.row-card tr.row-card-actions td { @apply bg-slate-50 text-right; }
+
+.safe-top { padding-top: env(safe-area-inset-top); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+
+/* Puantaj: tutup çekilen kaydırma çubuğu ve tablonun kendi çubuğu */
+.grid-slider { -webkit-appearance: none; appearance: none; display: block; width: 100%; height: 26px; margin-top: 2px; background: transparent; cursor: grab; touch-action: none; }
+.grid-slider::-webkit-slider-runnable-track { height: 8px; border-radius: 999px; background: rgb(var(--slate-200)); }
+.grid-slider::-moz-range-track { height: 8px; border-radius: 999px; background: rgb(var(--slate-200)); }
+.grid-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 64px; height: 22px; margin-top: -7px; border-radius: 999px; background: #a83232; border: 2px solid rgb(var(--surface)); box-shadow: 0 1px 3px rgb(0 0 0 / 0.35); }
+.grid-slider::-moz-range-thumb { width: 60px; height: 18px; border-radius: 999px; background: #a83232; border: 2px solid rgb(var(--surface)); box-shadow: 0 1px 3px rgb(0 0 0 / 0.35); }
+.grid-slider:active { cursor: grabbing; }
+.att-grid { scrollbar-width: thin; scrollbar-color: #a83232 rgb(var(--slate-200)); }
+.att-grid::-webkit-scrollbar { height: 10px; width: 10px; }
+.att-grid::-webkit-scrollbar-track { background: rgb(var(--slate-200)); }
+.att-grid::-webkit-scrollbar-thumb { background: #a83232; border-radius: 999px; }

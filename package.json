@@ -1,0 +1,99 @@
+{
+  "name": "eromec",
+  "productName": "EroMec",
+  "version": "1.8.0",
+  "description": "EroMec - Eroğlu Mechanic personel ve gider takip uygulaması",
+  "author": "Eroğlu Mechanic",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "npm run typecheck && vite build && node scripts/build-main.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "start": "electron .",
+    "dev:web": "vite --mode web",
+    "build:web": "vite build --mode web",
+    "test": "vitest run",
+    "test:e2e": "npm run build && playwright test",
+    "dist:win": "npm run build && electron-builder --win nsis --x64 --publish never",
+    "dist:win:portable": "npm run build && electron-builder --win portable --x64 --publish never"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.119.0",
+    "exceljs": "^4.4.0",
+    "sql.js": "^1.15.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^22.20.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/sql.js": "^1.4.11",
+    "@vitejs/plugin-react": "^6.1.2",
+    "autoprefixer": "^10.6.1",
+    "electron": "^44.7.2",
+    "electron-builder": "^26.15.3",
+    "esbuild": "^0.28.2",
+    "lucide-react": "^1.57.0",
+    "postcss": "^8.5.30",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "tailwindcss": "^3.4.19",
+    "typescript": "5.9",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.4"
+  },
+  "build": {
+    "appId": "com.eroglumechanic.eromec",
+    "productName": "EroMec",
+    "copyright": "Eroğlu Mechanic",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "package.json",
+      "!node_modules/sql.js/dist/*.zip",
+      "!node_modules/sql.js/dist/*-debug*",
+      "!node_modules/sql.js/dist/*-browser*",
+      "!node_modules/sql.js/dist/sql-asm*",
+      "!node_modules/sql.js/dist/worker.*",
+      "!node_modules/sql.js/dist/sql-wasm-inline.js",
+      "!node_modules/exceljs/dist"
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "EroMec-Kurulum-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "EroMec",
+      "uninstallDisplayName": "EroMec - Eroğlu Mechanic",
+      "language": "1055",
+      "installerLanguages": [
+        "tr_TR"
+      ],
+      "deleteAppDataOnUninstall": false
+    },
+    "portable": {
+      "artifactName": "EroMec-Tasinabilir-${version}.${ext}"
+    },
+    "publish": null
+  }
+}

@@ -1,0 +1,16 @@
+node_modules/
+dist/
+dist-web/
+dist-electron/
+release/
+exe-parcalari/
+test-results/
+playwright-report/
+*.log
+# Supabase adresi/anahtarı ve yerel veriler depoya girmez
+.env
+.env.*
+!.env.web.example
+*.db
+*.sqlite
+EroMec-kaynak-kodu*.zip
