@@ -41,7 +41,11 @@ jobs:
           if [ -z "${{ vars.SUPABASE_URL }}" ] || [ -z "${{ vars.SUPABASE_PUBLISHABLE_KEY }}" ]; then
             echo "::warning::SUPABASE_URL / SUPABASE_PUBLISHABLE_KEY değişkenleri boş; site 'sunucu bağlı değil' modunda yayınlanacak."
           fi
-          if grep -rq "sb_secret_\|service_role" dist-web/assets; then echo "::error::Derlemede gizli anahtar var!"; exit 1; fi
+          # Kütüphane kodunda "sb_secret_" kelimesi geçer; gerçek bir gizli anahtar (uzun ek) ya da service_role JWT aranır.
+          if grep -rEq "sb_secret_[A-Za-z0-9_-]{16,}" dist-web/assets; then echo "::error::Derlemede gizli anahtar var!"; exit 1; fi
+          node -e 'const k=process.env.K||""; if(k.startsWith("sb_secret_")) {console.log("::error::SUPABASE_PUBLISHABLE_KEY gizli anahtar!"); process.exit(1)} if(k.startsWith("eyJ")){const p=JSON.parse(Buffer.from(k.split(".")[1],"base64url")); if(p.role==="service_role"){console.log("::error::service_role anahtarı kullanılamaz!"); process.exit(1)}}'
+        env:
+          K: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist-web
