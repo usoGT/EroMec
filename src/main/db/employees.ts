@@ -65,7 +65,14 @@ export function getEmployee(db: Db, employeeId: number): Employee {
   return e;
 }
 
+// Çevrimiçi sürümde numara sunucudan alınır (şef bütün çalışanları göremediği için yerel en büyük numara yanıltır).
+let reservedEmployeeNo: string | null = null;
+export function setReservedEmployeeNo(no: string | null) {
+  reservedEmployeeNo = no;
+}
+
 function nextEmployeeNo(db: Db): string {
+  if (reservedEmployeeNo) return reservedEmployeeNo;
   const row = db.get<{ n: number }>(
     `SELECT COALESCE(MAX(CAST(substr(employee_no, 2) AS INTEGER)), 0) AS n FROM employees WHERE employee_no GLOB 'P[0-9]*'`,
   );

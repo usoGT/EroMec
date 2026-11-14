@@ -8,7 +8,53 @@ import { createService } from '../main/db/service';
 import { UserError } from '../main/db/validation';
 import { API_METHODS, type EroMecApi } from '../shared/api';
 import { formatPeriod, todayIso } from '../shared/dates';
-import type { SiteFilter } from '../shared/types';
+import type { AppSettings, SiteFilter, ThemeMode } from '../shared/types';
+import { getSupabase, SERVER_CONFIGURED } from '../renderer/lib/auth';
+import { installTracking } from './sync';
+import { createEngine, type Engine, type Me, type PullResult, type Remote } from './engine';
+
+/** Arayüzün çevrimiçi durumu yönetmek için kullandığı uçlar (window.eromecSync) */
+export interface SyncController {
+  /** Sunucu yapılandırılmış mı (false ise veriler yalnızca bu cihazda durur) */
+  readonly online: boolean;
+  readonly me: Me | null;
+  connect(): Promise<Me>;
+  refresh(): Promise<Me>;
+  disconnect(): Promise<void>;
+}
+
+declare global {
+  interface Window {
+    eromecSync?: SyncController;
+  }
+}
+
+const THEME_KEY = 'eromec.theme';
+const readTheme = (): ThemeMode => {
+  try {
+    const v = localStorage.getItem(THEME_KEY);
+    return v === 'dark' || v === 'system' ? v : 'light';
+  } catch {
+    return 'light';
+  }
+};
+
+const supabaseRemote: Remote = {
+  pull: async () => {
+    const { data, error } = await (await getSupabase()).rpc('pull_all');
+    if (error) throw error;
+    return data as PullResult;
+  },
+  push: async (changes) => {
+    const { error } = await (await getSupabase()).rpc('apply_changes', { changes });
+    if (error) throw error;
+  },
+  nextEmployeeNo: async () => {
+    const { data, error } = await (await getSupabase()).rpc('next_employee_no');
+    if (error) throw error;
+    return String(data);
+  },
+};
 
 const IDB_NAME = 'eromec';
 const STORE = 'files';
@@ -85,7 +131,9 @@ const scopeSuffix = (label: string) => (label.startsWith('Bütün') ? '' : ` ${l
 
 export async function installWebApi(): Promise<void> {
   const SQL = await initSqlJs({ locateFile: () => wasmUrl });
-  const stored = await idbGet().catch(() => undefined);
+  const online = SERVER_CONFIGURED;
+  // Çevrimiçi sürümde veri sunucudan gelir; cihazdaki eski yerel kopya kullanılmaz.
+  const stored = online ? undefined : await idbGet().catch(() => undefined);
 
   // Yazmalar sırayla ve en son hâliyle kaydedilir.
   let pending: Uint8Array | null = null;
@@ -104,10 +152,17 @@ export async function installWebApi(): Promise<void> {
     })();
   };
 
-  const db = new Db(SQL, stored ? new SQL.Database(stored) : new SQL.Database(), 'Bu cihaz (tarayıcı deposu)', save);
+  const db = online
+    ? new Db(SQL, new SQL.Database(), null)
+    : new Db(SQL, stored ? new SQL.Database(stored) : new SQL.Database(), 'Bu cihaz (tarayıcı deposu)', save);
   migrate(db);
   db.persist();
   const service = createService(db);
+  let engine: Engine | null = null;
+  if (online) {
+    installTracking(db);
+    engine = createEngine(db, supabaseRemote);
+  }
 
   type Handler = (arg: any) => unknown | Promise<unknown>;
   const extra: Partial<Record<keyof EroMecApi, Handler>> = {
@@ -152,6 +207,7 @@ export async function installWebApi(): Promise<void> {
       return { saved: true, path: name };
     },
     backupRestore: async () => {
+      if (online) throw new UserError('Çevrimiçi sürümde yedekten geri yükleme henüz yok. Yedek dosyasını masaüstü uygulamasında açabilirsiniz.');
       const file = await pickFile('.db,.sqlite,.sqlite3');
       if (!file) return { restored: false };
       if (!window.confirm(`Mevcut bütün verilerin üzerine yazılacak.\n\nSeçilen yedek: ${file.name}\n\nŞu anki veriler önce güvenlik amacıyla indirilecek. Devam edilsin mi?`)) {
@@ -164,19 +220,42 @@ export async function installWebApi(): Promise<void> {
     },
   };
 
+  if (online) {
+    // Görünüm (gece modu) cihaza özeldir: sunucuya yazılmaz, tarayıcıda saklanır.
+    extra.settingsGet = () => ({ ...service.settingsGet(), theme: readTheme() });
+    extra.settingsSave = (s: AppSettings) => {
+      try {
+        localStorage.setItem(THEME_KEY, s.theme);
+      } catch {
+        /* depolama kapalıysa yalnızca bu oturumda geçerli */
+      }
+      const cur = service.settingsGet();
+      const same = cur.companyName === s.companyName && cur.appName === s.appName && cur.currency === s.currency && cur.dailyMinWageKurus === s.dailyMinWageKurus;
+      const saved = same ? cur : service.settingsSave({ ...s, theme: cur.theme });
+      return { ...saved, theme: s.theme };
+    };
+    extra.dbInfo = () => ({ ...service.dbInfo(), path: 'Supabase (çevrimiçi)' });
+  }
+
   const api: Record<string, (arg?: unknown) => Promise<unknown>> = {};
   for (const name of API_METHODS) {
     const handler = extra[name] ?? ((service as unknown as Record<string, Handler>)[name] as Handler | undefined);
     if (!handler) throw new Error(`İşleyici eksik: ${name}`);
     api[name] = async (arg?: unknown) => {
       try {
-        return await handler(arg);
+        return engine ? await engine.call(name, () => handler(arg)) : await handler(arg);
       } catch (err) {
         if (err instanceof UserError) throw new Error(err.message);
         console.error(`[EroMec] ${name} hatası:`, err);
+        // Motorun (eşitleme) hataları zaten kullanıcıya gösterilecek biçimdedir.
+        if (engine && err instanceof Error && !/^(SQLITE|no such|UNIQUE|FOREIGN|NOT NULL|CHECK)/i.test(err.message) && !(err instanceof TypeError)) throw err;
         throw new Error(`Beklenmeyen bir hata oluştu: ${(err as Error)?.message ?? String(err)}`);
       }
     };
   }
   window.eromec = Object.freeze(api) as unknown as EroMecApi;
+  const e = engine;
+  window.eromecSync = e
+    ? { online: true, get me() { return e.me; }, connect: () => e.connect(), refresh: () => e.refresh(), disconnect: () => e.disconnect() }
+    : { online: false, me: null, connect: () => Promise.reject(new Error('Sunucu bağlı değil.')), refresh: () => Promise.reject(new Error('Sunucu bağlı değil.')), disconnect: () => Promise.resolve() };
 }

@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { LogIn, LogOut, UserPlus } from 'lucide-react';
+import { LogIn, LogOut, RefreshCw, UserPlus } from 'lucide-react';
 import { authErrorMessage, SERVER_CONFIGURED, useAuth } from '../lib/auth';
 import { useApp } from '../lib/context';
+import { useSession } from '../lib/session';
 import Modal from './Modal';
 import { Field, FormError } from './Fields';
 
@@ -11,6 +12,7 @@ type Tab = 'login' | 'register';
 export default function AccountModal({ onClose, initialTab = 'login' }: { onClose: () => void; initialTab?: Tab }) {
   const { account, signIn, signUp, resetPassword, signOut } = useAuth();
   const { toast } = useApp();
+  const { me, refresh, refreshing } = useSession();
   const [tab, setTab] = useState<Tab>(initialTab);
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -81,8 +83,14 @@ export default function AccountModal({ onClose, initialTab = 'login' }: { onClos
           <div className="min-w-0">
             <div className="truncate font-semibold" data-testid="account-name">{account.fullName || '—'}</div>
             <div className="truncate text-sm text-slate-500" data-testid="account-email">{account.email}</div>
+            {me && <div className="text-xs text-slate-500" data-testid="account-role">{me.role === 'admin' ? 'Yönetici (ana firma)' : `Şantiye şefi · ${me.siteIds.length} şantiye`}</div>}
           </div>
         </div>
+        {me && (
+          <button className="btn-secondary mt-4" disabled={refreshing} onClick={() => void refresh().then(() => toast('Veriler güncellendi.'))}>
+            <RefreshCw size={16} /> {refreshing ? 'Yenileniyor…' : 'Verileri yenile'}
+          </button>
+        )}
       </Modal>
     );
   }

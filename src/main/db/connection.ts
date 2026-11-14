@@ -76,6 +76,16 @@ export class Db {
     this.db.exec(sql);
   }
 
+  /** Aynı komutu çok sayıda satır için tek hazırlıkla çalıştırır (toplu yükleme). */
+  runMany(sql: string, rows: SqlValue[][]) {
+    const stmt = this.db.prepare(sql);
+    try {
+      for (const r of rows) stmt.run(r);
+    } finally {
+      stmt.free();
+    }
+  }
+
   /** İşlemi bir veritabanı işlemi (transaction) içinde çalıştırır ve sonunda diske yazar. */
   tx<T>(fn: () => T): T {
     if (this.inTx) return fn();

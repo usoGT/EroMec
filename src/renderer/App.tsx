@@ -5,6 +5,7 @@ import Logo, { Wordmark } from './components/Logo';
 import { useIsMobile } from './lib/useIsMobile';
 import { ACCOUNTS_ENABLED, AuthProvider, useAuth } from './lib/auth';
 import AccountModal from './components/AccountModal';
+import { SessionGate } from './lib/session';
 import DashboardPage from './pages/DashboardPage';
 import EmployeesPage from './pages/EmployeesPage';
 import OvertimePage from './pages/OvertimePage';
@@ -223,7 +224,9 @@ export default function App() {
   return (
     <AppProvider>
       <AuthProvider>
-        <Shell />
+        <SessionGate>
+          <Shell />
+        </SessionGate>
       </AuthProvider>
     </AppProvider>
   );
