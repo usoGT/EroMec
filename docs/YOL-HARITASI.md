@@ -29,7 +29,7 @@
 - [x] iPhone projesi (`ios/`) + bulutta derleyip TestFlight'a yükleyen iş akışı (`ios.yml`; Apple hesabı olmadan denenemedi)
 - [x] Uygulama ikonu, açılış ekranı (`assets/`, `npm run mobile:assets`), web manifesti (ana ekrana ekle)
 - [x] Gizlilik politikası / KVKK metni: `src/renderer/public/gizlilik.html` → https://usogt.github.io/EroMec/gizlilik.html
-- [ ] KULLANICI: gizlilik metnindeki [FİRMA ADRESİ] ve [İLETİŞİM E-POSTASI] yerlerini doldur
+- [x] Gizlilik metnine firma adresi ve iletişim e-postası eklendi
 - [ ] KULLANICI: Play Console (25 $) / Apple Developer (99 $/yıl) hesapları ve GitHub Secrets (`docs/TELEFON.md`)
 
 ## Faz 6 – İyileştirme
