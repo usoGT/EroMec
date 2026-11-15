@@ -105,7 +105,7 @@ function MobileShell({ page, setPage }: { page: PageId; setPage: (p: PageId) => 
           <Logo size={30} />
           <div className="min-w-0 flex-1 leading-tight">
             <div className="truncate text-[17px]" data-testid="app-name">
-              {settings.appName === 'EroMec' ? <Wordmark /> : <span className="font-bold">{settings.appName}</span>}
+              {settings.appName === 'Puanto' ? <Wordmark /> : <span className="font-bold">{settings.appName}</span>}
             </div>
             <div className="truncate text-[11px] text-white/60">{settings.companyName}</div>
           </div>
@@ -182,7 +182,7 @@ function DesktopShell({ page, setPage }: { page: PageId; setPage: (p: PageId) =>
           <Logo size={open ? 36 : 32} />
           <div className={`min-w-0 ${hide}`}>
             <div className="truncate text-lg leading-tight" data-testid="app-name">
-              {settings.appName === 'EroMec' ? <Wordmark /> : <span className="font-bold">{settings.appName}</span>}
+              {settings.appName === 'Puanto' ? <Wordmark /> : <span className="font-bold">{settings.appName}</span>}
             </div>
             <div className="truncate text-xs text-white/70">{settings.companyName}</div>
           </div>

@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
         off = () => sub.data.subscription.unsubscribe();
       })
-      .catch((e) => console.error('[EroMec] oturum kontrolü:', e))
+      .catch((e) => console.error('[Puanto] oturum kontrolü:', e))
       .finally(() => !cancelled && setLoading(false));
     return () => {
       cancelled = true;

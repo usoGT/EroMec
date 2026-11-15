@@ -14,13 +14,13 @@ describe('otomatik yedek', () => {
   it('her gün bir dosya yazar, aynı gün ikinci kez yazmaz, 30 günden eskisini siler', () => {
     const dir = tmp();
     const d1 = new Date(2026, 9, 1, 9);
-    expect(dailyBackup(dir, bytes(1), d1)).toBe(path.join(dir, 'EroMec-otomatik-2026-10-01.db'));
+    expect(dailyBackup(dir, bytes(1), d1)).toBe(path.join(dir, 'Puanto-otomatik-2026-10-01.db'));
     expect(dailyBackup(dir, bytes(2), new Date(2026, 9, 1, 18))).toBeUndefined();
     expect(fs.readFileSync(path.join(dir, autoBackupName(d1)))[0]).toBe(1); // günün ilk hâli korunur
 
     for (let i = 2; i <= 31; i++) dailyBackup(dir, bytes(i), new Date(2026, 9, i, 9));
     expect(fs.readdirSync(dir).length).toBe(30); // 2–31 Ekim
-    expect(fs.existsSync(path.join(dir, 'EroMec-otomatik-2026-10-01.db'))).toBe(false);
+    expect(fs.existsSync(path.join(dir, 'Puanto-otomatik-2026-10-01.db'))).toBe(false);
 
     fs.writeFileSync(path.join(dir, 'EroMec-Yedek-2020-01-01.db'), bytes(9)); // elle alınan yedeğe dokunulmaz
     pruneBackups(dir, new Date(2027, 0, 1));

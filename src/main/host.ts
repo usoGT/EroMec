@@ -44,7 +44,7 @@ export function registerHost(opts: { dataDir: string; legacy: Db; isTrustedUrl: 
       try {
         return { ok: true, data: await fn(arg) };
       } catch (err) {
-        console.error(`[EroMec] host ${name} hatası:`, err);
+        console.error(`[Puanto] host ${name} hatası:`, err);
         return { ok: false, error: (err as Error)?.message ?? String(err) };
       }
     });

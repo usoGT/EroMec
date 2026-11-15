@@ -1,7 +1,7 @@
 // Çevrimiçi sürümün cihazla konuştuğu küçük arayüz: son kopya (internet yokken salt okunur açılış)
 // ve masaüstünde PC'ye günlük otomatik yedek. Masaüstünde ana süreç (IPC), tarayıcıda IndexedDB uygular.
 
-export interface CopyOwner { id: string; email: string; fullName: string; role: 'admin' | 'chief'; siteIds: number[] }
+export interface CopyOwner { id: string; email: string; fullName: string; role: 'admin' | 'chief'; siteIds: number[]; workspaceId?: number | null; workspaceRole?: 'owner' | 'member'; workspaceName?: string | null }
 export interface CopyMeta {
   /** Kopyanın alındığı an (ISO) */
   savedAt: string;

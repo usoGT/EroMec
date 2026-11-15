@@ -44,7 +44,7 @@ export function registerIpc(service: Service, opts: { isTrustedUrl: (url: string
       const data = service.reportData(a?.from, a?.to, String(a?.title ?? 'Rapor'), a);
       const r = await dialog.showSaveDialog(win(e)!, {
         title: 'Raporu CSV olarak kaydet',
-        defaultPath: `${safeFileName(`EroMec ${data.title}`)}.csv`,
+        defaultPath: `${safeFileName(`Puanto ${data.title}`)}.csv`,
         filters: [{ name: 'CSV (Excel ile açılır)', extensions: ['csv'] }],
       });
       if (r.canceled || !r.filePath) return { saved: false };
@@ -55,7 +55,7 @@ export function registerIpc(service: Service, opts: { isTrustedUrl: (url: string
       const data = service.reportData(a?.from, a?.to, String(a?.title ?? 'Rapor'), a);
       const r = await dialog.showSaveDialog(win(e)!, {
         title: 'Raporu PDF olarak kaydet',
-        defaultPath: `${safeFileName(`EroMec ${data.title}`)}.pdf`,
+        defaultPath: `${safeFileName(`Puanto ${data.title}`)}.pdf`,
         filters: [{ name: 'PDF', extensions: ['pdf'] }],
       });
       if (r.canceled || !r.filePath) return { saved: false };
@@ -103,8 +103,8 @@ export function registerIpc(service: Service, opts: { isTrustedUrl: (url: string
     backupCreate: async (_a, e) => {
       const r = await dialog.showSaveDialog(win(e)!, {
         title: 'Veritabanı yedeğini kaydet',
-        defaultPath: `EroMec-Yedek-${todayIso()}.db`,
-        filters: [{ name: 'EroMec yedeği', extensions: ['db'] }],
+        defaultPath: `Puanto-Yedek-${todayIso()}.db`,
+        filters: [{ name: 'Puanto yedeği', extensions: ['db'] }],
       });
       if (r.canceled || !r.filePath) return { saved: false };
       fs.writeFileSync(r.filePath, service.backupBytes());
@@ -115,7 +115,7 @@ export function registerIpc(service: Service, opts: { isTrustedUrl: (url: string
       const r = await dialog.showOpenDialog(w, {
         title: 'Geri yüklenecek yedeği seçin',
         properties: ['openFile'],
-        filters: [{ name: 'EroMec yedeği', extensions: ['db', 'sqlite', 'sqlite3'] }],
+        filters: [{ name: 'Puanto yedeği', extensions: ['db', 'sqlite', 'sqlite3'] }],
       });
       if (r.canceled || !r.filePaths[0]) return { restored: false };
       const file = r.filePaths[0];
@@ -153,7 +153,7 @@ export function registerIpc(service: Service, opts: { isTrustedUrl: (url: string
         return { ok: true, data: await handler(arg, event) };
       } catch (err) {
         if (err instanceof UserError) return { ok: false, error: err.message };
-        console.error(`[EroMec] ${name} hatası:`, err);
+        console.error(`[Puanto] ${name} hatası:`, err);
         return { ok: false, error: `Beklenmeyen bir hata oluştu: ${(err as Error)?.message ?? String(err)}` };
       }
     });

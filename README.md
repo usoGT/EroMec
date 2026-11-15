@@ -1,4 +1,4 @@
-# EroMec — Eroğlu Mechanic
+# Puanto — Puanto
 
 Personel, ek mesai ve gider takibi için Windows masaüstü uygulaması.
 Tamamen **çevrim dışı** çalışır; bütün veriler bilgisayardaki tek bir SQLite dosyasında saklanır.
@@ -56,8 +56,8 @@ npm run test:e2e     # gerçek Electron penceresiyle uçtan uca test (Playwright
 ## Windows kurulum dosyası (.exe) oluşturma
 
 ```bash
-npm run dist:win             # release/EroMec-Kurulum-1.8.0.exe (NSIS kurulum sihirbazı)
-npm run dist:win:portable    # release/EroMec-Tasinabilir-1.8.0.exe (kurulumsuz, tek dosya)
+npm run dist:win             # release/Puanto-Kurulum-1.9.0.exe (NSIS kurulum sihirbazı)
+npm run dist:win:portable    # release/Puanto-Tasinabilir-1.9.0.exe (kurulumsuz, tek dosya)
 ```
 
 - Kurulum Türkçe’dir; kurulum klasörü seçilebilir, masaüstü ve Başlat menüsü kısayolu oluşturulur.
@@ -67,9 +67,9 @@ npm run dist:win:portable    # release/EroMec-Tasinabilir-1.8.0.exe (kurulumsuz,
 
 ## Verilerin yeri ve yedekleme
 
-- Veritabanı: `%APPDATA%\EroMec\eromec.db` (Ayarlar sayfasında tam yol gösterilir).
+- Veritabanı: `%APPDATA%\Puanto\eromec.db` (Ayarlar sayfasında tam yol gösterilir).
 - **Ayarlar → Yedek al** ile `.db` dosyası olarak yedek alınır.
-- **Ayarlar → Yedekten geri yükle** önce onay ister, ardından mevcut verinin otomatik bir kopyasını `%APPDATA%\EroMec\yedekler\` klasörüne kaydeder ve sonra yedeği yükler.
+- **Ayarlar → Yedekten geri yükle** önce onay ister, ardından mevcut verinin otomatik bir kopyasını `%APPDATA%\Puanto\yedekler\` klasörüne kaydeder ve sonra yedeği yükler.
 - Uygulamayı kaldırmak verileri **silmez**.
 
 ## Proje yapısı
@@ -107,7 +107,7 @@ Yabancı anahtarlar `ON DELETE RESTRICT` ile tanımlıdır; geçmiş kayıtlar y
 - Arayüzde Node.js erişimi kapalıdır (`contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`).
 - Veritabanı işlemleri yalnızca `preload` ile açılan, listesi sabit IPC kanalları üzerinden yapılır; girdiler ana süreçte doğrulanır.
 - Paketlenmiş uygulamada sıkı CSP uygulanır ve yerel dosyalar dışındaki bütün ağ istekleri engellenir.
-- Aynı anda yalnızca bir EroMec penceresi çalışır (aynı veritabanına çift yazma önlenir).
+- Aynı anda yalnızca bir Puanto penceresi çalışır (aynı veritabanına çift yazma önlenir).
 
 ### Teknik not: SQLite
 

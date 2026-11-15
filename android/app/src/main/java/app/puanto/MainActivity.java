@@ -1,4 +1,4 @@
-package com.eroglumechanic.eromec;
+package app.puanto;
 
 import com.getcapacitor.BridgeActivity;
 

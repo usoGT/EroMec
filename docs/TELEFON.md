@@ -1,4 +1,4 @@
-# EroMec – telefon uygulamaları
+# Puanto – telefon uygulamaları
 
 Telefon uygulaması, web sürümünün (dist-web) Capacitor ile paketlenmiş hâlidir. Veriler aynı Supabase hesabından gelir.
 Telefona özel: dışa aktarılan PDF/Excel paylaşma menüsüyle (WhatsApp, Drive, e-posta…) gönderilir; Android geri tuşu açık pencereyi kapatır.
@@ -6,7 +6,7 @@ Telefona özel: dışa aktarılan PDF/Excel paylaşma menüsüyle (WhatsApp, Dri
 ## Android (APK)
 
 1. github.com/usoGT/EroMec → **Actions → Android → Run workflow**.
-2. Bitince sayfanın altındaki **EroMec-Android** dosyasını indir, içindeki `.apk`'yı telefona at.
+2. Bitince sayfanın altındaki **Puanto-Android** dosyasını indir, içindeki `.apk`'yı telefona at.
 3. Telefonda dosyaya dokun → "Bilinmeyen kaynaklardan yüklemeye izin ver" → **Yükle**.
 
 Bu APK hata ayıklama (debug) imzalıdır; kendi telefonlarınıza kurmak için yeterlidir.
@@ -28,7 +28,7 @@ Bu APK hata ayıklama (debug) imzalıdır; kendi telefonlarınıza kurmak için 
 Mac gerekmez; derleme GitHub'ın Mac sunucusunda yapılır.
 
 1. developer.apple.com → **Apple Developer Program** (yıllık 99 $).
-2. appstoreconnect.apple.com → **Uygulamalar → +** → Paket kimliği `com.eroglumechanic.eromec`, ad `EroMec`.
+2. appstoreconnect.apple.com → **Uygulamalar → +** → Paket kimliği `app.puanto`, ad `Puanto`.
 3. App Store Connect → **Kullanıcılar ve Erişim → Entegrasyonlar → App Store Connect API → +** (erişim: **Admin**).
    `.p8` dosyasını indir (bir kez iner), **Key ID** ve **Issuer ID**'yi not al.
 4. developer.apple.com → Membership → **Team ID**'yi not al.

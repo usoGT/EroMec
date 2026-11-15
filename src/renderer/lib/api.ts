@@ -10,7 +10,7 @@ declare global {
 export const api: EroMecApi = new Proxy({} as EroMecApi, {
   get(_t, prop: string) {
     const real = window.eromec;
-    if (!real) throw new Error('EroMec arka plan bağlantısı bulunamadı. Uygulamayı EroMec içinden açın.');
+    if (!real) throw new Error('Puanto arka plan bağlantısı bulunamadı. Uygulamayı Puanto içinden açın.');
     return (real as unknown as Record<string, unknown>)[prop];
   },
 });

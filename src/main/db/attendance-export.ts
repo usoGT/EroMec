@@ -55,7 +55,7 @@ function sheetName(title: string, used: Set<string>): string {
 
 export async function buildAttendanceXlsx(data: AttendanceExportData): Promise<Uint8Array> {
   const wb = new ExcelJS.Workbook();
-  wb.creator = 'EroMec';
+  wb.creator = 'Puanto';
   wb.created = data.generatedAt;
   const { days, statuses } = data.month;
   const byCode = toStatusMap(statuses);
@@ -196,7 +196,7 @@ export async function buildAttendanceXlsx(data: AttendanceExportData): Promise<U
     [5, 7, 22, 14, 13].forEach((w, i) => (ws.getColumn(i + 1).width = w));
     days.forEach((_, i) => (ws.getColumn(fixed.length + i + 1).width = 4.2));
     for (let c = firstTotal; c <= lastCol; c++) ws.getColumn(c).width = moneyCols.includes(c) ? 12 : 8;
-    ws.headerFooter.oddFooter = `&L${data.companyName} — EroMec&RSayfa &P / &N`;
+    ws.headerFooter.oddFooter = `&L${data.companyName} — Puanto&RSayfa &P / &N`;
   }
   return new Uint8Array(await wb.xlsx.writeBuffer());
 }

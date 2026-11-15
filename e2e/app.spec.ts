@@ -25,7 +25,7 @@ async function launch(): Promise<{ app: ElectronApplication; page: Page; externa
     if (!/^(file|data|devtools|blob):/.test(r.url())) external.push(r.url());
   });
   await page.setViewportSize({ width: 1366, height: 820 });
-  await expect(page.getByTestId('app-name')).toHaveText('EroMec');
+  await expect(page.getByTestId('app-name')).toHaveText('Puanto');
   return { app, page, external };
 }
 
@@ -36,7 +36,7 @@ async function shot(page: Page, name: string) {
 const nav = (page: Page, label: string) => page.getByRole('navigation', { name: 'Ana menü' }).getByRole('button', { name: label }).click();
 const dialog = (page: Page, title: string) => page.getByRole('dialog', { name: title });
 
-test('EroMec uçtan uca senaryo', async () => {
+test('Puanto uçtan uca senaryo', async () => {
   let { app, page, external } = await launch();
 
   // --- Ana sayfa: boş veritabanı, sahte veri yok
@@ -367,7 +367,7 @@ test('EroMec uçtan uca senaryo', async () => {
   await page.getByRole('button', { name: 'Yedekten geri yükle' }).click();
   await expect(page.getByText('Yedek geri yüklendi')).toBeVisible();
   await page.waitForLoadState('domcontentloaded');
-  await expect(page.getByTestId('app-name')).toHaveText('EroMec');
+  await expect(page.getByTestId('app-name')).toHaveText('Puanto');
   await nav(page, 'Giderler');
   await expect(page.getByRole('table', { name: 'Giderler' })).toContainText('Dükkan kirası');
   expect(fs.readdirSync(path.join(DATA_DIR, 'yedekler')).some((f) => f.startsWith('otomatik-geri-yukleme-oncesi'))).toBe(true);

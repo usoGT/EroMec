@@ -6,7 +6,11 @@ import { READ_METHODS, type EroMecApi } from '../shared/api';
 import { UserError } from '../main/db/validation';
 import { applyIncremental, clearChanges, collectChanges, installTracking, loadSnapshot, serverErrorMessage, setTracking, type ChangeSet, type Snapshot } from './sync';
 
-export interface Me { id: string; email: string; fullName: string; role: 'admin' | 'chief'; siteIds: number[] }
+export interface Me {
+  id: string; email: string; fullName: string; role: 'admin' | 'chief'; siteIds: number[];
+  /** Kullanıcının işletmesi (yoksa önce işletme açmalı ya da bir işletmeye eklenmeli) */
+  workspaceId?: number | null; workspaceRole?: 'owner' | 'member'; workspaceName?: string | null;
+}
 export interface PullResult { data: Snapshot; me: Me | null; ids: Record<string, number>; serverTime?: string }
 export interface PullSinceResult { data: Snapshot; deletes: { t: string; pk: string }[]; me: Me | null; serverTime: string }
 
@@ -98,7 +102,8 @@ export function createEngine(db: Db, remote: Remote): Engine {
       return Number.POSITIVE_INFINITY;
     }
     // Paylaşılan şantiyeler değiştiyse eski kayıtlar da görünür/gizli olur: baştan indir.
-    const sameSites = !!res.me && [...res.me.siteIds].sort().join(',') === [...me.siteIds].sort().join(',');
+    const sameSites = !!res.me && [...res.me.siteIds].sort().join(',') === [...me.siteIds].sort().join(',')
+      && (res.me.workspaceId ?? null) === (me.workspaceId ?? null);
     if (!res.me || !sameSites) {
       await pull();
       return Number.POSITIVE_INFINITY;

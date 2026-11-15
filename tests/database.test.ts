@@ -23,7 +23,7 @@ describe('veritabanı ve migration', () => {
     expect(svc.categoriesList().map((c) => c.name)).toEqual([
       'Personel maaşı', 'Ek mesai', 'Yemek', 'Yol ve ulaşım', 'Yedek parça ve malzeme', 'Diğer',
     ]);
-    expect(svc.settingsGet()).toEqual({ companyName: 'Eroğlu Mechanic', appName: 'EroMec', currency: 'TRY', theme: 'light', dailyMinWageKurus: 0 });
+    expect(svc.settingsGet()).toEqual({ companyName: 'Firmam', appName: 'Puanto', currency: 'TRY', theme: 'light', dailyMinWageKurus: 0 });
     // Başlangıçta hiçbir sahte kayıt yok
     expect(svc.employeesList()).toHaveLength(0);
     expect(svc.expensesList({})).toHaveLength(0);
@@ -38,7 +38,7 @@ describe('veritabanı ve migration', () => {
     a.svc.overtimeCreate({ input: { employeeId: e.id, date: '2026-10-15', startTime: '18:00', endTime: '20:00', breakMinutes: 0, hourlyRateKurus: 20000 } });
     const cat = a.svc.categoriesList().find((c) => c.name === 'Yemek')!;
     a.svc.expenseCreate({ input: { date: '2026-10-15', name: 'Öğle yemeği', categoryId: cat.id, amountKurus: 45050, isPaid: true } });
-    a.svc.settingsSave({ companyName: 'Eroğlu Mekanik Ltd. Şti.', appName: 'EroMec', currency: 'TRY', theme: 'dark', dailyMinWageKurus: 73_000 });
+    a.svc.settingsSave({ companyName: 'Eroğlu Mekanik Ltd. Şti.', appName: 'Puanto', currency: 'TRY', theme: 'dark', dailyMinWageKurus: 73_000 });
     expect(() => a.svc.settingsSave({ companyName: 'x', appName: 'y', currency: 'TRY', theme: 'mor' as never, dailyMinWageKurus: 0 })).toThrow(/görünüm/);
     a.db.close();
     expect(fs.existsSync(file!)).toBe(true);

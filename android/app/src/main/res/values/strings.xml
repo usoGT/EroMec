@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">EroMec</string>
-    <string name="title_activity_main">EroMec</string>
-    <string name="package_name">com.eroglumechanic.eromec</string>
-    <string name="custom_url_scheme">com.eroglumechanic.eromec</string>
+    <string name="app_name">Puanto</string>
+    <string name="title_activity_main">Puanto</string>
+    <string name="package_name">app.puanto</string>
+    <string name="custom_url_scheme">app.puanto</string>
 </resources>

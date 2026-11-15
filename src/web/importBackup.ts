@@ -1,4 +1,4 @@
-// Masaüstü yedeğini (EroMec .db) çevrimiçi veriye aktarma.
+// Masaüstü yedeğini (.db) çevrimiçi veriye aktarma.
 // Yedekteki satırlar yeni numaralarla mevcut (sunucudan inmiş) veritabanına eklenir; aradaki bağlar
 // (çalışan → şantiye, gider → kategori, bordro → gider …) yeni numaralara çevrilir.
 // Aynı adlı firma/şantiye/kategori ve aynı T.C. numaralı çalışan yeniden eklenmez, mevcut olanla eşleştirilir.
@@ -8,7 +8,7 @@ import type { SqlValue } from 'sql.js';
 import { SYNC_TABLES } from './sync';
 
 /** Fabrika (ilk kurulum) ayarları: sunucuda hâlâ bu değerdeyse yedekteki değer alınır. */
-const DEFAULT_SETTINGS: Record<string, string> = { companyName: 'Eroğlu Mechanic', appName: 'EroMec', currency: 'TRY' };
+const DEFAULT_SETTINGS: Record<string, string> = { companyName: 'Firmam', appName: 'Puanto', currency: 'TRY' };
 /** Cihaza özel ayarlar aktarılmaz */
 const SKIP_SETTINGS = ['theme'];
 /** Aynı yedeğin ikinci kez aktarılmasını önleyen işaretin ayar anahtarı */
@@ -96,6 +96,7 @@ export async function importBackup(target: Db, source: Db, opts: ImportOptions):
       if (name === 'settings') {
         const key = String(row.key);
         if (SKIP_SETTINGS.includes(key) || key.startsWith('import:')) continue;
+        if (key === 'appName' && row.value === 'EroMec') continue; // eski uygulama adı taşınmaz
         const cur = target.get<{ value: string }>('SELECT value FROM settings WHERE key = ?', [key])?.value;
         if (cur === row.value) continue;
         if (cur === undefined || cur === DEFAULT_SETTINGS[key]) {

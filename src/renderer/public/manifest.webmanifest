@@ -1,7 +1,7 @@
 {
-  "name": "EroMec - Eroğlu Mechanic",
-  "short_name": "EroMec",
-  "description": "Personel, puantaj, mesai, bordro ve gider takibi",
+  "name": "Puanto",
+  "short_name": "Puanto",
+  "description": "Puanto: personel, puantaj, mesai, bordro ve gider takibi",
   "lang": "tr",
   "start_url": "./",
   "scope": "./",

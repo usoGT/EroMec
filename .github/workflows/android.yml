@@ -1,4 +1,4 @@
-# Android uygulaması (APK). Actions → "Android" → Run workflow; bitince "EroMec-Android" dosyasını indir,
+# Android uygulaması (APK). Actions → "Android" → Run workflow; bitince "Puanto-Android" dosyasını indir,
 # telefona at ve kur (Ayarlar → "Bilinmeyen kaynaklardan yükleme"ye izin ver).
 # İmzalı sürüm (Play Store) için depo Secrets: ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD.
 name: Android
@@ -49,7 +49,7 @@ jobs:
           if [ -f app/eromec.keystore ]; then ./gradlew assembleRelease bundleRelease -PversionCode=${{ github.run_number }}; else ./gradlew assembleDebug -PversionCode=${{ github.run_number }}; fi
       - uses: actions/upload-artifact@v4
         with:
-          name: EroMec-Android
+          name: Puanto-Android
           path: |
             android/app/build/outputs/apk/**/*.apk
             android/app/build/outputs/bundle/**/*.aab

@@ -17,7 +17,7 @@ async function start() {
     // Çevrimiçi (masaüstü ya da tarayıcı) ve tarayıcı/telefon sürümü: veritabanı sayfanın içinde çalışır.
     const [{ installWebApi }, { setupNative }] = await Promise.all([import('../web/webApi'), import('../web/native')]);
     await installWebApi();
-    void setupNative().catch((e) => console.error('[EroMec] telefon kurulumu:', e));
+    void setupNative().catch((e) => console.error('[Puanto] telefon kurulumu:', e));
   } else {
     // Çevrimdışı masaüstü: veriler bu bilgisayardaki dosyada, ana süreçte.
     window.eromec = window.eromecDesktop;

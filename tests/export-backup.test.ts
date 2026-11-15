@@ -36,7 +36,7 @@ describe('yedekleme ve geri yükleme', () => {
   it('geçersiz dosya reddedilir, mevcut veri bozulmaz', async () => {
     const { svc, db } = await openService();
     svc.employeeCreate({ input: { fullName: 'Kalıcı', position: 'Usta', monthlySalaryKurus: 0, overtimeRateKurus: 0, startDate: null, status: 'active' } });
-    expect(() => svc.restore(new TextEncoder().encode('bu bir veritabanı değil'.repeat(10)))).toThrow(/geçerli bir EroMec yedeği değil/);
+    expect(() => svc.restore(new TextEncoder().encode('bu bir veritabanı değil'.repeat(10)))).toThrow(/geçerli bir Puanto yedeği değil/);
     // Başka bir SQLite dosyası (EroMec tabloları yok)
     const foreign = new db.SQL.Database();
     foreign.exec('CREATE TABLE x (a)');

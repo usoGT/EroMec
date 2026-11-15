@@ -5,6 +5,7 @@ import type { Category } from '../../shared/types';
 import { api, errorMessage } from '../lib/api';
 import { useApp } from '../lib/context';
 import { useSession } from '../lib/session';
+import WorkspaceSection from '../components/WorkspaceSection';
 import PageHeader from '../components/PageHeader';
 import Modal from '../components/Modal';
 import { Field, FormError, MoneyInput } from '../components/Fields';
@@ -115,6 +116,7 @@ export default function SettingsPage() {
   return (
     <div className="max-w-3xl">
       <PageHeader title="Ayarlar" />
+      {me && me.workspaceId != null && <WorkspaceSection />}
 
       <section className="card mb-4 px-5 py-4">
         <h2 className="mb-3 font-semibold">Genel</h2>

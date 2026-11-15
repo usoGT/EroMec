@@ -9,6 +9,7 @@ import { errorMessage } from './api';
 import Logo, { Wordmark } from '../components/Logo';
 import AccountModal from '../components/AccountModal';
 import NewPasswordModal from '../components/NewPasswordModal';
+import WorkspaceSetup from '../components/WorkspaceSetup';
 
 interface SessionValue {
   /** Çevrimiçi sürümde giriş yapan kullanıcının rolü ve şantiyeleri; yerel sürümde null */
@@ -139,7 +140,7 @@ export function SessionGate({ children }: { children: ReactNode }) {
         setVersion((v) => v + 1);
       }
     } catch (e) {
-      console.warn('[EroMec] arka plan yenileme:', e);
+      console.warn('[Puanto] arka plan yenileme:', e);
     }
   }, [online, accountId, copyAt, reloadSettings]);
 
@@ -160,7 +161,7 @@ export function SessionGate({ children }: { children: ReactNode }) {
     void window.eromecSync!.onRemoteChange(() => {
       if (timer) clearTimeout(timer);
       timer = setTimeout(run, 1500);
-    }).then((unsub) => (closed ? unsub() : (off = unsub))).catch((e) => console.warn('[EroMec] anlık güncelleme kurulamadı:', e));
+    }).then((unsub) => (closed ? unsub() : (off = unsub))).catch((e) => console.warn('[Puanto] anlık güncelleme kurulamadı:', e));
     return () => {
       closed = true;
       if (timer) clearTimeout(timer);
@@ -224,8 +225,17 @@ export function SessionGate({ children }: { children: ReactNode }) {
 
   if (state !== 'ready' || !me) return <Splash><p className="text-white/60" data-testid="gate-loading">Veriler yükleniyor…</p></Splash>;
 
+  // workspaceId undefined ise sunucuda isletme.sql henüz yok: eski tek işletmeli düzen
+  if (!copyAt && me.workspaceId === null) {
+    return (
+      <Splash>
+        <WorkspaceSetup email={me.email} onReady={() => connect(true)} onSignOut={() => void signOut().catch(showError)} />
+      </Splash>
+    );
+  }
+
   return (
-    <Ctx.Provider value={{ me, isAdmin: me.role === 'admin', refresh, refreshing, readOnly: copyAt !== null }}>
+    <Ctx.Provider value={{ me, isAdmin: me.workspaceRole === 'owner' || me.role === 'admin', refresh, refreshing, readOnly: copyAt !== null }}>
       <div className="flex h-full flex-col">
         {copyAt && (
           <div className="safe-top flex shrink-0 flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-amber-500 px-3 py-1.5 text-center text-sm font-medium text-black" role="status" data-testid="readonly-banner">

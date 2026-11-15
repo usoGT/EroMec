@@ -8,10 +8,10 @@ def keystoreFile = file('eromec.keystore')
 def canSign = keystoreFile.exists() && System.getenv('EROMEC_KEYSTORE_PASSWORD')
 
 android {
-    namespace = "com.eroglumechanic.eromec"
+    namespace = "app.puanto"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.eroglumechanic.eromec"
+        applicationId "app.puanto"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode eromecVersionCode

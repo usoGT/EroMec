@@ -4,11 +4,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { AUTO_BACKUP_DAYS } from '../shared/host';
 
-const NAME = /^EroMec-otomatik-(\d{4}-\d{2}-\d{2})\.db$/;
+const NAME = /^(?:Puanto|EroMec)-otomatik-(\d{4}-\d{2}-\d{2})\.db$/; // eski adlı yedekler de temizlenir
 
 const isoDay = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-export const autoBackupName = (day: Date) => `EroMec-otomatik-${isoDay(day)}.db`;
+export const autoBackupName = (day: Date) => `Puanto-otomatik-${isoDay(day)}.db`;
 
 /** Önce geçici dosyaya yazıp sonra yeniden adlandırır (yarım dosya kalmaz). */
 export function writeAtomic(file: string, bytes: Uint8Array) {

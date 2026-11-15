@@ -1,4 +1,4 @@
-# EroMec yol haritası
+# Puanto yol haritası
 
 ## Biten
 - Masaüstü uygulaması (Windows, çevrimdışı) – 1.8.0
@@ -37,6 +37,13 @@
 - [x] Anlık güncelleme (Supabase Realtime; form açıkken bekler, kendi değişikliğin ekranı yenilemez)
 - [x] Telefonda PDF/Excel paylaşma (uygulamada paylaşma menüsü, telefon tarayıcısında Web Share; PDF telefonda dosya olarak üretilir)
 - [ ] KULLANICI: Supabase'de `artimli.sql` çalıştır
+
+## Faz 7 – Puanto: çok firmalı
+- [x] Ad Puanto, yeni logo ve ikonlar, paket kimliği `app.puanto`
+- [x] Her firma kendi işletmesi (`supabase/isletme.sql`): ayrı firma listesi, ayarlar, kategoriler, fırçalar, kayıtlar
+- [x] İşletme kurma ekranı, Ayarlar → İşletme ve üyeler (e-postayla ekle, davet, çıkar, ayrıl)
+- [x] Masaüstü eski EroMec verisini ilk açılışta yeni klasöre taşır
+- [ ] KULLANICI: GitHub deposunu "Puanto" olarak yeniden adlandırmak isterse site adresi değişir (Supabase Site URL de güncellenmeli)
 
 ## Sırada ne olabilir
 - Gerçek kullanımdan gelen geri bildirimler

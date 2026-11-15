@@ -26,7 +26,7 @@ const hours = (min: number) => Math.round((min / 60) * 100) / 100;
 
 export async function buildPayrollXlsx(d: PayrollExportData): Promise<Uint8Array> {
   const wb = new ExcelJS.Workbook();
-  wb.creator = 'EroMec';
+  wb.creator = 'Puanto';
   const ws = wb.addWorksheet('Bordro', {
     pageSetup: { orientation: 'landscape', paperSize: 9, fitToPage: true, fitToWidth: 1, fitToHeight: 0, margins: { left: 0.3, right: 0.3, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2 } },
     views: [{ state: 'frozen', ySplit: 4, xSplit: 2 }],
@@ -92,7 +92,7 @@ export async function buildPayrollXlsx(d: PayrollExportData): Promise<Uint8Array
   sign.getCell(8).value = 'Kontrol eden: ______________________';
   sign.getCell(13).value = 'Onaylayan: ______________________';
   [5, 22, 13, 30, 14, 18, 12, 8, 13, 8, 13, 14, 14, 13, 11, 16].forEach((w, i) => (ws.getColumn(i + 1).width = w));
-  ws.headerFooter.oddFooter = `&L${d.companyName} — EroMec&RSayfa &P / &N`;
+  ws.headerFooter.oddFooter = `&L${d.companyName} — Puanto&RSayfa &P / &N`;
   return new Uint8Array(await wb.xlsx.writeBuffer());
 }
 

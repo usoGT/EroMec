@@ -21,7 +21,7 @@ test('şantiyeler, toplu mesai, takvim ve günlük rapor', async () => {
   const app = await electron.launch({ args: [ROOT, '--no-sandbox'], env: { ...process.env, EROMEC_DATA_DIR: dataDir, VITE_DEV_SERVER_URL: '' } });
   const page = await app.firstWindow();
   await page.setViewportSize({ width: 1366, height: 860 });
-  await expect(page.getByTestId('app-name')).toHaveText('EroMec');
+  await expect(page.getByTestId('app-name')).toHaveText('Puanto');
 
   // --- Sol menü: ☰ ile açılır / kapanır
   const aside = page.locator('aside');
@@ -35,14 +35,14 @@ test('şantiyeler, toplu mesai, takvim ve günlük rapor', async () => {
 
   // --- Firma ve şantiyeler: ana firma otomatik oluşur
   await nav(page, 'Şantiyeler');
-  await expect(page.getByRole('table', { name: 'Firmalar' })).toContainText('Eroğlu Mechanic');
+  await expect(page.getByRole('table', { name: 'Firmalar' })).toContainText('Firmam');
   await page.getByRole('button', { name: 'Yeni firma' }).click();
   let d = dialog(page, 'Yeni firma');
   await d.locator('input[name=name]').fill('Yıldız İnşaat A.Ş.');
   await d.locator('input[name=taxNo]').fill('1234567890');
   await d.getByRole('button', { name: 'Kaydet' }).click();
   await expect(d).toBeHidden();
-  for (const [company, name] of [['Eroğlu Mechanic', 'Merkez Atölye'], ['Yıldız İnşaat A.Ş.', 'Ataşehir Konutları']]) {
+  for (const [company, name] of [['Firmam', 'Merkez Atölye'], ['Yıldız İnşaat A.Ş.', 'Ataşehir Konutları']]) {
     await page.getByRole('button', { name: 'Yeni şantiye' }).click();
     d = dialog(page, 'Yeni şantiye');
     await d.locator('select[name=company]').selectOption({ label: company });
@@ -171,7 +171,7 @@ test('şantiyeler, toplu mesai, takvim ve günlük rapor', async () => {
   await nav(page, 'Raporlar');
   await page.getByRole('button', { name: 'Günlük' }).click();
   await expect(page.getByTestId('cost-total')).toHaveText('4.090,00 ₺');
-  await page.getByLabel('Firma / şantiye filtresi').selectOption({ label: 'Eroğlu Mechanic — bütün şantiyeler' });
+  await page.getByLabel('Firma / şantiye filtresi').selectOption({ label: 'Firmam — bütün şantiyeler' });
   await expect(page.getByTestId('cost-total')).toHaveText('0,00 ₺');
   await page.getByLabel('Firma / şantiye filtresi').selectOption({ label: 'Yıldız İnşaat A.Ş. — bütün şantiyeler' });
   await expect(page.getByTestId('cost-total')).toHaveText('4.090,00 ₺');

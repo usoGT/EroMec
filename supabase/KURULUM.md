@@ -1,9 +1,9 @@
-# EroMec – Supabase kurulumu
+# Puanto – Supabase kurulumu
 
 ## 1. Veritabanı
 
 1. supabase.com → hesap aç → **New project**
-   - Ad: `EroMec`, Plan: **Free**, Bölge: **Central EU (Frankfurt)**
+   - Ad: `Puanto`, Plan: **Free**, Bölge: **Central EU (Frankfurt)**
    - Veritabanı şifresini kendin belirle ve sakla (kimseye verme).
 2. Sol menü **SQL Editor** → **New query** → dosyanın tamamını yapıştır → **Run**. Şu sırayla:
    1. `schema.sql` (tablolar)
@@ -11,6 +11,7 @@
    3. `uyelik.sql` (üyelik kuralları)
    4. `paylasim.sql` (şantiye paylaşma)
    5. `artimli.sql` (yalnızca değişenleri indirme + anlık güncelleme)
+   6. `isletme.sql` (her firmanın ayrı işletme alanı)
 
    Hepsini tekrar çalıştırmak güvenlidir (`schema.sql` hariç: o yalnızca ilk kurulumda).
 3. **Authentication → Sign In / Providers**: Email açık kalsın, **Confirm email** açık olsun
@@ -18,9 +19,10 @@
 4. **Project Settings → API**: `Project URL` ve `publishable` (anon) anahtarı lazım.
    `service_role` / `secret` anahtarını ve veritabanı şifresini kimseye verme, hiçbir yere yazma.
 
-Yetki: her üye kendi açtığı şantiyeleri ve kendi yazdığı kayıtları görür. Firma, ayar, kategori ve fırçalar herkese ortaktır.
-Şantiyeyi açan kişi, **Şantiyeler → Paylaş** ile kayıtlı başka bir üyeyi e-postasıyla ekleyebilir; eklenen kişi o şantiyenin
-her şeyini (maaş, T.C., IBAN dahil) görür ve düzenler. Giriş yapmamış biri hiçbir şey göremez.
+Yetki: her firma kendi **işletmesini** açar; işletmenin kayıtlarını (firma listesi, ayarlar, kategoriler, fırçalar, şantiyeler,
+çalışanlar…) başka işletmeler göremez. İşletme sahibi **Ayarlar → İşletme ve üyeler**'den kişileri e-postayla ekler
+(kayıtlı değilse kayıt olunca katılır). Sahip her şeyi görür; üyeler kendi açtıkları ve kendileriyle paylaşılan şantiyeleri görür
+(**Şantiyeler → Paylaş**). Giriş yapmamış biri hiçbir şey göremez.
 
 ## 2. Web sitesi (GitHub Pages)
 
@@ -49,7 +51,7 @@ Supabase'in hazır mail servisi saatte yalnızca 2 mail gönderir; gerçek kulla
    Alan adın yoksa önce bir tane al; Resend yalnızca doğrulanmış alan adından mail gönderir.
 2. Resend → **API Keys → Create API key** (Sending access).
 3. Supabase → **Authentication → Emails → SMTP Settings → Enable custom SMTP**:
-   - Sender email: `bildirim@ALAN_ADIN`, Sender name: `EroMec`
+   - Sender email: `bildirim@ALAN_ADIN`, Sender name: `Puanto`
    - Host: `smtp.resend.com`, Port: `465`, Username: `resend`, Password: Resend API anahtarı
 4. Supabase → **Authentication → Rate Limits**: "Emails sent per hour" değerini 30 gibi bir sayıya çıkar.
 5. Türkçe mail metinleri: `mail-sablonlari.md` dosyasındaki şablonları **Authentication → Emails → Templates** içine yapıştır.

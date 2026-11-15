@@ -1,9 +1,9 @@
 {
-  "name": "eromec",
-  "productName": "EroMec",
-  "version": "1.9.0",
-  "description": "EroMec - Eroğlu Mechanic personel ve gider takip uygulaması",
-  "author": "Eroğlu Mechanic",
+  "name": "puanto",
+  "productName": "Puanto",
+  "version": "2.0.0",
+  "description": "Puanto - personel, puantaj, mesai, bordro ve gider takibi",
+  "author": "Puanto",
   "license": "UNLICENSED",
   "private": true,
   "main": "dist-electron/main.js",
@@ -60,9 +60,9 @@
     "vitest": "^5.0.4"
   },
   "build": {
-    "appId": "com.eroglumechanic.eromec",
-    "productName": "EroMec",
-    "copyright": "Eroğlu Mechanic",
+    "appId": "app.puanto",
+    "productName": "Puanto",
+    "copyright": "Puanto",
     "directories": {
       "output": "release",
       "buildResources": "build"
@@ -89,8 +89,8 @@
           ]
         }
       ],
-      "icon": "build/icon.ico",
-      "artifactName": "EroMec-Kurulum-${version}.${ext}"
+      "icon": "build/icon.png",
+      "artifactName": "Puanto-Kurulum-${version}.${ext}"
     },
     "nsis": {
       "oneClick": false,
@@ -98,8 +98,8 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "EroMec",
-      "uninstallDisplayName": "EroMec - Eroğlu Mechanic",
+      "shortcutName": "Puanto",
+      "uninstallDisplayName": "Puanto",
       "language": "1055",
       "installerLanguages": [
         "tr_TR"
@@ -107,7 +107,7 @@
       "deleteAppDataOnUninstall": false
     },
     "portable": {
-      "artifactName": "EroMec-Tasinabilir-${version}.${ext}"
+      "artifactName": "Puanto-Tasinabilir-${version}.${ext}"
     },
     "publish": null
   }

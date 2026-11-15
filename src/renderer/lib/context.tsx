@@ -48,7 +48,7 @@ function useDarkMode(theme: ThemeMode): boolean {
 }
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [settings, setSettings] = useState<AppSettings>({ companyName: 'Eroğlu Mechanic', appName: 'EroMec', currency: 'TRY', theme: 'light', dailyMinWageKurus: 0 });
+  const [settings, setSettings] = useState<AppSettings>({ companyName: '', appName: 'Puanto', currency: 'TRY', theme: 'light', dailyMinWageKurus: 0 });
   const isDark = useDarkMode(settings.theme);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [confirmState, setConfirmState] = useState<(ConfirmOptions & { resolve: (v: boolean) => void }) | null>(null);

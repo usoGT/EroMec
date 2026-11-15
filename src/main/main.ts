@@ -1,5 +1,6 @@
-// EroMec ana süreç: pencere, veritabanı ve IPC kurulumu.
+// Puanto ana süreç: pencere, veritabanı ve IPC kurulumu.
 import { app, BrowserWindow, dialog, Menu, nativeTheme, session } from 'electron';
+import fs from 'node:fs';
 import path from 'node:path';
 import { Db } from './db/connection';
 import { migrate } from './db/migrations';
@@ -12,12 +13,12 @@ const DEV_URL = process.env.VITE_DEV_SERVER_URL;
 /** Derlemeye gömülen Supabase adresi: boşsa uygulama tamamen çevrimdışıdır (veriler yalnızca bu PC'de). */
 const SERVER_URL = (process.env.EROMEC_SUPABASE_URL ?? '').replace(/\/+$/, '');
 
-app.setName('EroMec');
+app.setName('Puanto');
 // Veri klasörü verilirse (testler, taşınabilir kullanım) tarayıcı profili (oturum, depolama) da oraya gider;
 // böylece kurulu uygulamanın profiline dokunulmaz.
 if (process.env.EROMEC_DATA_DIR) app.setPath('userData', process.env.EROMEC_DATA_DIR);
 app.commandLine.appendSwitch('lang', 'tr');
-if (process.platform === 'win32') app.setAppUserModelId('com.eroglumechanic.eromec');
+if (process.platform === 'win32') app.setAppUserModelId('app.puanto');
 
 // Aynı veritabanına iki pencereden yazılmasını önlemek için tek örnek çalışır.
 if (!app.requestSingleInstanceLock()) {
@@ -37,7 +38,7 @@ function createWindow() {
     height: 800,
     minWidth: 1000,
     minHeight: 640,
-    title: 'EroMec - Eroğlu Mechanic',
+    title: 'Puanto',
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#101010' : '#f1f5f9',
     show: false,
     autoHideMenuBar: true,
@@ -77,8 +78,26 @@ function blockNetwork() {
   session.defaultSession.setPermissionRequestHandler((_wc, _perm, cb) => cb(false));
 }
 
+/** Uygulamanın eski adıyla (EroMec) bu bilgisayarda tutulan veriler, ilk açılışta yeni klasöre kopyalanır. */
+function adoptLegacyData(dataDir: string) {
+  const legacyDir = path.join(app.getPath('appData'), 'EroMec');
+  const legacyDb = path.join(legacyDir, 'eromec.db');
+  if (fs.existsSync(path.join(dataDir, 'eromec.db')) || !fs.existsSync(legacyDb)) return;
+  fs.mkdirSync(dataDir, { recursive: true });
+  fs.copyFileSync(legacyDb, path.join(dataDir, 'eromec.db'));
+  const backups = path.join(legacyDir, 'yedekler');
+  if (fs.existsSync(backups)) fs.cpSync(backups, path.join(dataDir, 'yedekler'), { recursive: true, force: false });
+}
+
 async function bootstrap() {
   const dataDir = process.env.EROMEC_DATA_DIR || app.getPath('userData');
+  if (!process.env.EROMEC_DATA_DIR) {
+    try {
+      adoptLegacyData(dataDir);
+    } catch (e) {
+      console.error('[Puanto] eski veriler taşınamadı:', e);
+    }
+  }
   const dbPath = path.join(dataDir, 'eromec.db');
   const wasmDir = path.dirname(require.resolve('sql.js/dist/sql-wasm.wasm'));
   try {
@@ -96,7 +115,7 @@ async function bootstrap() {
         try {
           dailyBackup(autoDir, db.exportBytes());
         } catch (e) {
-          console.error('[EroMec] otomatik yedek alınamadı:', e);
+          console.error('[Puanto] otomatik yedek alınamadı:', e);
         }
       };
       daily();
@@ -104,7 +123,7 @@ async function bootstrap() {
     }
     app.on('before-quit', () => db.close());
   } catch (err) {
-    dialog.showErrorBox('EroMec başlatılamadı', `Veritabanı açılamadı:\n${dbPath}\n\n${(err as Error).message}`);
+    dialog.showErrorBox('Puanto başlatılamadı', `Veritabanı açılamadı:\n${dbPath}\n\n${(err as Error).message}`);
     app.exit(1);
     return;
   }

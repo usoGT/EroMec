@@ -1,5 +1,5 @@
 # iPhone: Mac olmadan bulutta derleyip TestFlight'a yükler (Actions → "iPhone (TestFlight)" → Run workflow).
-# Gerekenler (bkz. docs/TELEFON.md): Apple Developer üyeliği, App Store Connect'te "com.eroglumechanic.eromec" uygulaması ve
+# Gerekenler (bkz. docs/TELEFON.md): Apple Developer üyeliği, App Store Connect'te "app.puanto" uygulaması ve
 # depo Secrets: APPLE_TEAM_ID, APPSTORE_API_KEY_ID, APPSTORE_API_ISSUER_ID, APPSTORE_API_PRIVATE_KEY (.p8 dosyasının içeriği).
 # İmza otomatik: Xcode, App Store Connect API anahtarıyla sertifika ve profili kendisi alır.
 # NOT: Apple hesabı olmadan denenemedi; ilk çalıştırmada küçük ayar gerekebilir.

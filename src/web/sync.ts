@@ -163,7 +163,7 @@ export function clearChanges(db: Db) {
 // Sunucu (Postgres) hatalarının kullanıcıya gösterilecek karşılıkları
 const CONSTRAINTS: [RegExp, string][] = [
   [/ux_employees_national_id/, 'Bu T.C. kimlik numarası başka bir çalışanda kayıtlı.'],
-  [/employees_employee_no_key/, 'Aynı anda başka bir çalışan eklendi; lütfen tekrar deneyin.'],
+  [/employees_employee_no_key|ux_employees_no/, 'Aynı anda başka bir çalışan eklendi; lütfen tekrar deneyin.'],
   [/ux_expense_categories_name/, 'Bu adda bir kategori zaten var.'],
   [/ux_companies_name/, 'Bu adda bir firma zaten var.'],
   [/sites_company_id_name_key/, 'Bu firmada aynı adda bir şantiye zaten var.'],

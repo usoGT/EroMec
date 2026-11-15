@@ -10,8 +10,9 @@ export function getSettings(db: Db): AppSettings {
   const rows = db.all<{ key: string; value: string }>('SELECT key, value FROM settings');
   const map = new Map(rows.map((r) => [r.key, r.value]));
   return {
-    companyName: map.get('companyName') ?? 'Eroğlu Mechanic',
-    appName: map.get('appName') ?? 'EroMec',
+    companyName: map.get('companyName') ?? 'Firmam',
+    // Eski adla kaydedilmiş uygulama adı yeni ada çevrilir (EroMec → Puanto)
+    appName: (map.get('appName') === 'EroMec' ? undefined : map.get('appName')) ?? 'Puanto',
     currency: map.get('currency') ?? 'TRY',
     theme: THEMES.includes(map.get('theme') as ThemeMode) ? (map.get('theme') as ThemeMode) : 'light',
     dailyMinWageKurus: Number(map.get('dailyMinWageKurus') ?? 0) || 0,

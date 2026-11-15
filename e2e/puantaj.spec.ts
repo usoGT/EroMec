@@ -18,7 +18,7 @@ test('puantaj: doldurma, işaretleme, Excel/PDF', async () => {
   const app = await electron.launch({ args: [ROOT, '--no-sandbox'], env: { ...process.env, EROMEC_DATA_DIR: dataDir, VITE_DEV_SERVER_URL: '' } });
   const page = await app.firstWindow();
   await page.setViewportSize({ width: 1500, height: 860 });
-  await expect(page.getByTestId('app-name')).toHaveText('EroMec');
+  await expect(page.getByTestId('app-name')).toHaveText('Puanto');
 
   // Hazırlık: arayüzün kullandığı API ile firma, şantiye ve çalışan ekle
   await page.evaluate(async () => {

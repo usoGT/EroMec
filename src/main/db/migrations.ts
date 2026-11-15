@@ -104,8 +104,8 @@ export const MIGRATIONS: Migration[] = [
         db.run('INSERT INTO expense_categories (name, kind, is_system, sort_order) VALUES (?, ?, 1, ?)', [c.name, c.kind, i + 1]);
       });
       const defaults: [string, string][] = [
-        ['companyName', 'Eroğlu Mechanic'],
-        ['appName', 'EroMec'],
+        ['companyName', 'Firmam'],
+        ['appName', 'Puanto'],
         ['currency', 'TRY'],
       ];
       for (const [k, v] of defaults) db.run('INSERT INTO settings (key, value) VALUES (?, ?)', [k, v]);
@@ -176,7 +176,7 @@ export const MIGRATIONS: Migration[] = [
         CREATE UNIQUE INDEX ux_daily_report_date_site ON daily_reports(date, IFNULL(site_id, 0));
       `);
       // Mevcut şirket adıyla bir "ana firma" kaydı açılır (kullanıcı sonradan değiştirebilir).
-      const company = db.get<{ value: string }>(`SELECT value FROM settings WHERE key = 'companyName'`)?.value || 'Eroğlu Mechanic';
+      const company = db.get<{ value: string }>(`SELECT value FROM settings WHERE key = 'companyName'`)?.value || 'Firmam';
       db.run('INSERT INTO companies (name) VALUES (?)', [company]);
     },
   },
@@ -325,7 +325,7 @@ export function migrate(db: Db): number {
   let current = getSchemaVersion(db);
   if (current > LATEST_SCHEMA_VERSION) {
     throw new Error(
-      `Veritabanı bu uygulama sürümünden daha yeni (şema ${current}). Lütfen EroMec'in güncel sürümünü kullanın.`,
+      `Veritabanı bu uygulama sürümünden daha yeni (şema ${current}). Lütfen Puanto'nun güncel sürümünü kullanın.`,
     );
   }
   for (const m of MIGRATIONS) {

@@ -1,5 +1,5 @@
-# Windows kurulum dosyasını (EroMec-Kurulum-x.y.z.exe) derler. Actions → "Masaüstü kurulumu" → Run workflow,
-# bitince sayfanın altındaki "EroMec-Kurulum" dosyasını indir. Supabase değişkenleri doluysa masaüstü de girişle çalışır.
+# Windows kurulum dosyasını (Puanto-Kurulum-x.y.z.exe) derler. Actions → "Masaüstü kurulumu" → Run workflow,
+# bitince sayfanın altındaki "Puanto-Kurulum" dosyasını indir. Supabase değişkenleri doluysa masaüstü de girişle çalışır.
 name: Masaüstü kurulumu
 
 on:
@@ -25,6 +25,6 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
       - uses: actions/upload-artifact@v4
         with:
-          name: EroMec-Kurulum
+          name: Puanto-Kurulum
           path: release/EroMec-Kurulum-*.exe
           retention-days: 30

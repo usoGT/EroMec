@@ -32,6 +32,14 @@ export interface SyncController {
   siteShare(siteId: number, email: string): Promise<SiteMember>;
   /** Üyeyi şantiyeden çıkarır (sahip herkesi, üye yalnızca kendini) */
   siteUnshare(siteId: number, userId: string): Promise<void>;
+  /** Yeni işletme açar (kullanıcı sahibi olur) */
+  workspaceCreate(name: string): Promise<void>;
+  /** İşletmenin üyeleri ve bekleyen davetler */
+  workspaceMembers(): Promise<WorkspaceMember[]>;
+  /** Üye ekler (yalnızca sahip); kayıtlı değilse kayıt olunca katılır. pending: davet bekliyor */
+  workspaceAddMember(email: string): Promise<{ pending: boolean }>;
+  /** Üyeyi çıkarır / daveti siler (sahip) ya da kullanıcı kendisi ayrılır */
+  workspaceRemoveMember(userId: string | null, email?: string): Promise<void>;
   /** Cihazdaki son kopyanın bilgisi (verilen hesaba aitse) */
   copyInfo(accountId: string): Promise<CopyMeta | null>;
   /** İnternet yokken son kopyayı salt okunur açar */
@@ -49,6 +57,7 @@ export interface SyncController {
 }
 
 export interface SiteMember { userId: string; email: string; fullName: string; isOwner: boolean }
+export interface WorkspaceMember { userId: string | null; email: string; fullName: string; role: 'owner' | 'member'; pending: boolean }
 
 declare global {
   interface Window {
@@ -100,7 +109,8 @@ async function subscribeChanges(onChange: () => void): Promise<() => void> {
 /** Sunucu işlevlerinin kendi (Türkçe) hata mesajları olduğu gibi gösterilir. */
 const rpcError = (e: unknown) => {
   const err = e as { code?: string; message?: string };
-  return new Error(err?.code === 'P0002' || (err?.code === '42501' && /[ışğüöçİ]/.test(err.message ?? '')) ? String(err.message) : serverErrorMessage(e));
+  const own = ['P0001', 'P0002', '22023', '42501'].includes(err?.code ?? '') && /[ışğüöçİŞĞÜÖÇ]/.test(err?.message ?? '');
+  return new Error(own ? String(err.message) : serverErrorMessage(e));
 };
 
 async function rpc<T>(fn: string, args: Record<string, unknown>): Promise<T> {
@@ -113,6 +123,19 @@ async function rpc<T>(fn: string, args: Record<string, unknown>): Promise<T> {
   if (res.error) throw rpcError(res.error);
   return res.data as T;
 }
+
+const workspaceApi = {
+  workspaceCreate: async (name: string) => {
+    await rpc('workspace_create', { ws_name: name });
+  },
+  workspaceMembers: async (): Promise<WorkspaceMember[]> =>
+    (await rpc<{ user_id: string | null; email: string; full_name: string; role: 'owner' | 'member'; pending: boolean }[]>('workspace_members', {}))
+      .map((m) => ({ userId: m.user_id, email: m.email, fullName: m.full_name, role: m.role, pending: m.pending })),
+  workspaceAddMember: async (email: string) => ({ pending: !!(await rpc<{ pending: boolean }>('workspace_add_member', { member_email: email })).pending }),
+  workspaceRemoveMember: async (userId: string | null, email?: string) => {
+    await rpc('workspace_remove_member', { member_id: userId, member_email: email ?? null });
+  },
+};
 
 const siteApi = {
   siteMembers: async (siteId: number): Promise<SiteMember[]> =>
@@ -267,7 +290,7 @@ export async function installWebApi(): Promise<void> {
       while (pending) {
         const b = pending;
         pending = null;
-        await idbPut(b).catch((e) => console.error('[EroMec] kayıt hatası:', e));
+        await idbPut(b).catch((e) => console.error('[Puanto] kayıt hatası:', e));
       }
       writing = false;
     })();
@@ -341,7 +364,7 @@ Tekrar aktarılırsa yarıda kalan kısımdaki bazı kayıtlar (gider, mesai) ç
     try {
       await host.saveCopy(db.exportBytes(), { savedAt: new Date().toISOString(), me: engine.me });
     } catch (e) {
-      console.error('[EroMec] son kopya yazılamadı:', e);
+      console.error('[Puanto] son kopya yazılamadı:', e);
     }
   };
   const scheduleCopy = () => {
@@ -352,12 +375,12 @@ Tekrar aktarılırsa yarıda kalan kısımdaki bazı kayıtlar (gider, mesai) ç
     reportExportCsv: async (a: { from: string; to: string; title: string } & SiteFilter) => {
       const { buildReportCsv } = await import('../main/db/export');
       const data = service.reportData(a?.from, a?.to, String(a?.title ?? 'Rapor'), a);
-      return deliver(`${safeFileName(`EroMec ${data.title}`)}.csv`, buildReportCsv(data), 'text/csv;charset=utf-8');
+      return deliver(`${safeFileName(`Puanto ${data.title}`)}.csv`, buildReportCsv(data), 'text/csv;charset=utf-8');
     },
     reportExportPdf: async (a: { from: string; to: string; title: string } & SiteFilter) => {
       const { buildReportHtml } = await import('../main/db/export');
       const data = service.reportData(a?.from, a?.to, String(a?.title ?? 'Rapor'), a);
-      return deliverPdf(`${safeFileName(`EroMec ${data.title}`)}.pdf`, buildReportHtml(data));
+      return deliverPdf(`${safeFileName(`Puanto ${data.title}`)}.pdf`, buildReportHtml(data));
     },
     attendanceExport: async (a: { month: string; format: 'xlsx' | 'pdf' } & SiteFilter) => {
       const m = await import('../main/db/attendance-export');
@@ -373,7 +396,7 @@ Tekrar aktarılırsa yarıda kalan kısımdaki bazı kayıtlar (gider, mesai) ç
       if (a?.format === 'pdf') return deliverPdf(`${base}.pdf`, m.buildPayrollHtml(data));
       return deliver(`${base}.xlsx`, await m.buildPayrollXlsx(data), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     },
-    backupCreate: () => deliver(`EroMec-Yedek-${todayIso()}.db`, service.backupBytes(), 'application/octet-stream'),
+    backupCreate: () => deliver(`Puanto-Yedek-${todayIso()}.db`, service.backupBytes(), 'application/octet-stream'),
     backupRestore: async () => {
       const file = await pickFile('.db,.sqlite,.sqlite3');
       if (!file) return { restored: false };
@@ -381,7 +404,7 @@ Tekrar aktarılırsa yarıda kalan kısımdaki bazı kayıtlar (gider, mesai) ç
       if (!window.confirm(`Mevcut bütün verilerin üzerine yazılacak.\n\nSeçilen yedek: ${file.name}\n\nŞu anki veriler önce güvenlik amacıyla indirilecek. Devam edilsin mi?`)) {
         return { restored: false };
       }
-      const safetyCopy = `EroMec-geri-yukleme-oncesi-${todayIso()}.db`;
+      const safetyCopy = `Puanto-geri-yukleme-oncesi-${todayIso()}.db`;
       download(safetyCopy, service.backupBytes(), 'application/octet-stream');
       service.restore(new Uint8Array(await file.arrayBuffer()));
       return { restored: true, path: file.name, safetyCopy };
@@ -417,7 +440,7 @@ Tekrar aktarılırsa yarıda kalan kısımdaki bazı kayıtlar (gider, mesai) ç
         return result;
       } catch (err) {
         if (err instanceof UserError) throw new Error(err.message);
-        console.error(`[EroMec] ${name} hatası:`, err);
+        console.error(`[Puanto] ${name} hatası:`, err);
         // Motorun (eşitleme) hataları zaten kullanıcıya gösterilecek biçimdedir.
         if (engine && err instanceof Error && !/^(SQLITE|no such|UNIQUE|FOREIGN|NOT NULL|CHECK)/i.test(err.message) && !(err instanceof TypeError)) throw err;
         throw new Error(`Beklenmeyen bir hata oluştu: ${(err as Error)?.message ?? String(err)}`);
@@ -447,7 +470,7 @@ Tekrar aktarılırsa yarıda kalan kısımdaki bazı kayıtlar (gider, mesai) ç
         if (copyTimer) clearTimeout(copyTimer);
         copyTimer = null;
         await e.disconnect();
-        await host.clearCopy().catch((err) => console.error('[EroMec] son kopya silinemedi:', err));
+        await host.clearCopy().catch((err) => console.error('[Puanto] son kopya silinemedi:', err));
       },
       copyInfo: async (accountId) => {
         const c = await host.loadCopy().catch(() => null);
@@ -467,10 +490,12 @@ Tekrar aktarılırsa yarıda kalan kısımdaki bazı kayıtlar (gider, mesai) ç
         return r.imported ?? null;
       },
       ...siteApi,
+      ...workspaceApi,
     }
     : {
       online: false, me: null, readOnly: false, lastRefreshChanged: false, onRemoteChange: async () => () => undefined, connect: offline, refresh: offline, disconnect: () => Promise.resolve(),
       siteMembers: offline, siteShare: offline, siteUnshare: offline, copyInfo: async () => null, openCopy: offline,
       legacyAvailable: async () => false, importLegacy: offline,
+      workspaceCreate: offline, workspaceMembers: offline, workspaceAddMember: offline, workspaceRemoveMember: offline,
     };
 }

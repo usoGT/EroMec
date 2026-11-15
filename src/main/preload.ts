@@ -1,4 +1,4 @@
-// Arayüze yalnızca tanımlı EroMec API'sini ve küçük "host" arayüzünü açar. Node.js erişimi verilmez.
+// Arayüze yalnızca tanımlı uygulama API'sini ve küçük "host" arayüzünü açar. Node.js erişimi verilmez.
 import { contextBridge, ipcRenderer } from 'electron';
 import { API_METHODS, HOST_PREFIX, IPC_PREFIX } from '../shared/api';
 import type { IpcResult } from '../shared/types';
