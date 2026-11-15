@@ -1,6 +1,6 @@
 // Ayarlar → İşletme ve üyeler (çevrimiçi): sahip üye ekler/çıkarır, üye işletmeden ayrılabilir.
 import { useCallback, useEffect, useState } from 'react';
-import { LogOut, Trash2, UserPlus } from 'lucide-react';
+import { Copy, LogOut, RefreshCw, Trash2, UserPlus } from 'lucide-react';
 import type { WorkspaceMember } from '../../web/webApi';
 import { errorMessage } from '../lib/api';
 import { useApp } from '../lib/context';
@@ -17,13 +17,16 @@ export default function WorkspaceSection() {
   const [busy, setBusy] = useState(false);
   const isOwner = me?.workspaceRole === 'owner';
 
+  const [code, setCode] = useState<string | null>(null);
+
   const load = useCallback(async () => {
     try {
       setMembers(await sync.workspaceMembers());
+      if (me?.workspaceRole === 'owner') setCode(await sync.workspaceCode());
     } catch (e) {
       setError(errorMessage(e));
     }
-  }, [sync]);
+  }, [sync, me?.workspaceRole]);
   useEffect(() => {
     if (!readOnly) void load();
   }, [load, readOnly]);
@@ -50,6 +53,27 @@ export default function WorkspaceSection() {
       await load();
     });
   };
+
+  const copyCode = async () => {
+    if (!code) return;
+    try {
+      await navigator.clipboard.writeText(code);
+      toast('Firma kodu kopyalandı.');
+    } catch {
+      toast(`Firma kodu: ${code}`, 'info');
+    }
+  };
+
+  const resetCode = () => void run(async () => {
+    const ok = await confirm({
+      title: 'Firma kodunu yenile',
+      message: <>Eski kod (<b>{code}</b>) artık çalışmaz; firmaya henüz katılmamış kişilere yeni kodu vermen gerekir. Mevcut üyeler etkilenmez.</>,
+      confirmText: 'Yenile',
+    });
+    if (!ok) return;
+    setCode(await sync.workspaceResetCode());
+    toast('Yeni firma kodu oluşturuldu.');
+  });
 
   const remove = (m: WorkspaceMember) => void run(async () => {
     const self = m.userId === me?.id;
@@ -82,10 +106,20 @@ export default function WorkspaceSection() {
         {isOwner ? ' Sahip olarak bütün şantiyeleri görürsün; üyeler kendi açtıkları ve kendileriyle paylaşılan şantiyeleri görür.' : ''}
       </p>
       <FormError message={error} />
+      {isOwner && !readOnly && code && (
+        <div className="mb-4 rounded border border-slate-200 bg-slate-50 px-3 py-3" data-testid="workspace-code-box">
+          <div className="text-sm text-slate-600">Firma kodu — şeflerin uygulamada <b>“Şef / çalışanım”</b> deyip bu kodu yazarak katılır:</div>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <span className="rounded bg-white px-3 py-1.5 font-mono text-xl font-bold tracking-[0.3em] text-slate-900 ring-1 ring-slate-300" data-testid="workspace-code-value">{code}</span>
+            <button className="btn-secondary" onClick={() => void copyCode()}><Copy size={15} /> Kopyala</button>
+            <button className="btn-link" disabled={busy} onClick={resetCode}><RefreshCw size={14} /> Kodu yenile</button>
+          </div>
+        </div>
+      )}
       {isOwner && !readOnly && (
         <form className="mb-3 flex flex-wrap items-center gap-2" onSubmit={(e) => { e.preventDefault(); add(); }} noValidate>
           <input name="memberEmail" type="email" inputMode="email" autoCapitalize="none" className="input min-w-0 flex-1" value={email}
-            onChange={(e) => setEmail(e.target.value)} placeholder="Eklenecek kişinin e-postası" aria-label="Eklenecek kişinin e-postası" data-testid="member-email" />
+            onChange={(e) => setEmail(e.target.value)} placeholder="ya da e-postayla ekle" aria-label="Eklenecek kişinin e-postası" data-testid="member-email" />
           <button type="submit" className="btn-primary" disabled={busy || !email.trim()}><UserPlus size={16} /> Üye ekle</button>
         </form>
       )}

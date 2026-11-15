@@ -177,3 +177,25 @@ describe('kurulum', () => {
     expect((await pg.as<{ name: string }>(a, 'select name from companies')).map((c) => c.name)).toEqual(['Tekrar Ltd.']);
   });
 });
+
+describe('firma kodu', () => {
+  it('sahip kodu görür; şef kodla katılır; yanlış kod reddedilir; kod yenilenince eskisi çalışmaz', async () => {
+    const o = await owner('kod-sahip@x.com', 'Kod İnşaat');
+    const code = await pg.rpc<string>(o, 'workspace_code');
+    expect(code).toMatch(/^[A-HJ-NP-Z2-9]{6}$/);
+
+    const sef = await pg.addUser('kod-sef@x.com');
+    await expect(pg.rpc(sef, 'workspace_code')).rejects.toThrow(/yalnızca işletme sahibi/);
+    await expect(pg.rpc(sef, 'workspace_join', { code: 'YANLIS' })).rejects.toThrow(/bulunamadı/);
+    expect(await pg.rpc(sef, 'workspace_join', { code: ` ${code.slice(0, 3).toLowerCase()}-${code.slice(3)} ` })).toMatchObject({ name: 'Kod İnşaat' });
+    expect((await pg.rpc<{ workspaceRole: string }>(sef, 'me_json')).workspaceRole).toBe('member');
+    await expect(pg.rpc(sef, 'workspace_join', { code })).rejects.toThrow(/Zaten/);
+    await expect(pg.rpc(sef, 'workspace_reset_code')).rejects.toThrow(/yalnızca işletme sahibi/);
+
+    const yeni = await pg.rpc<string>(o, 'workspace_reset_code');
+    expect(yeni).not.toBe(code);
+    const sef2 = await pg.addUser('kod-sef2@x.com');
+    await expect(pg.rpc(sef2, 'workspace_join', { code })).rejects.toThrow(/bulunamadı/);
+    await pg.rpc(sef2, 'workspace_join', { code: yeni });
+  });
+});

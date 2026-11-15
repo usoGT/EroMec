@@ -405,3 +405,54 @@ begin
     alter publication supabase_realtime add table public.profiles;
   end if;
 end $$;
+
+-- ───────────── Firma kodu: şefler kodla işletmeye katılır ─────────────
+-- Karışan harfler (0/O, 1/I/L) kullanılmaz. Sahip kodu Ayarlar'da görür, paylaşır, istediğinde yeniler.
+create or replace function public.gen_join_code() returns text
+language sql volatile as $$
+  select string_agg(substr('ABCDEFGHJKMNPQRSTUVWXYZ23456789', 1 + floor(random() * 31)::int, 1), '') from generate_series(1, 6);
+$$;
+
+alter table public.workspaces add column if not exists join_code text;
+update public.workspaces set join_code = public.gen_join_code() where join_code is null;
+alter table public.workspaces alter column join_code set default public.gen_join_code();
+alter table public.workspaces alter column join_code set not null;
+create unique index if not exists ux_workspaces_join_code on public.workspaces (join_code);
+
+-- İşletme kodu yalnızca sahibe gösterilir
+create or replace function public.workspace_code() returns text
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not public.is_admin() then raise exception 'Firma kodunu yalnızca işletme sahibi görebilir.' using errcode = '42501'; end if;
+  return (select join_code from public.workspaces where id = public.my_workspace());
+end $$;
+
+create or replace function public.workspace_reset_code() returns text
+language plpgsql security definer set search_path = public as $$
+declare c text;
+begin
+  if not public.is_admin() then raise exception 'Firma kodunu yalnızca işletme sahibi yenileyebilir.' using errcode = '42501'; end if;
+  loop
+    c := public.gen_join_code();
+    exit when not exists (select 1 from public.workspaces where join_code = c);
+  end loop;
+  update public.workspaces set join_code = c where id = public.my_workspace();
+  return c;
+end $$;
+
+-- Şef / çalışan firma koduyla katılır
+create or replace function public.workspace_join(code text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare ws public.workspaces;
+begin
+  if auth.uid() is null then raise exception 'Giriş gerekli' using errcode = '42501'; end if;
+  if public.my_workspace() is not null then raise exception 'Zaten bir işletmedesiniz.' using errcode = '42501'; end if;
+  select * into ws from public.workspaces where join_code = upper(regexp_replace(coalesce(code, ''), '[^A-Za-z0-9]', '', 'g'));
+  if ws.id is null then raise exception 'Bu firma kodu bulunamadı. Kodu işletme sahibinden kontrol edin.' using errcode = 'P0002'; end if;
+  update public.profiles set workspace_id = ws.id, workspace_role = 'member' where id = auth.uid();
+  delete from public.workspace_invites where lower(email) = lower((select email from public.profiles where id = auth.uid()));
+  return jsonb_build_object('id', ws.id, 'name', ws.name);
+end $$;
+
+revoke all on function public.workspace_code(), public.workspace_reset_code(), public.workspace_join(text), public.gen_join_code() from public, anon;
+grant execute on function public.workspace_code(), public.workspace_reset_code(), public.workspace_join(text) to authenticated;

@@ -34,6 +34,12 @@ export interface SyncController {
   siteUnshare(siteId: number, userId: string): Promise<void>;
   /** Yeni işletme açar (kullanıcı sahibi olur) */
   workspaceCreate(name: string): Promise<void>;
+  /** Firma koduyla bir işletmeye katılır; işletmenin adını döndürür */
+  workspaceJoin(code: string): Promise<string>;
+  /** Firma kodu (yalnızca sahip) */
+  workspaceCode(): Promise<string>;
+  /** Firma kodunu yeniler (yalnızca sahip); eski kod çalışmaz */
+  workspaceResetCode(): Promise<string>;
   /** İşletmenin üyeleri ve bekleyen davetler */
   workspaceMembers(): Promise<WorkspaceMember[]>;
   /** Üye ekler (yalnızca sahip); kayıtlı değilse kayıt olunca katılır. pending: davet bekliyor */
@@ -128,6 +134,9 @@ const workspaceApi = {
   workspaceCreate: async (name: string) => {
     await rpc('workspace_create', { ws_name: name });
   },
+  workspaceJoin: async (code: string) => (await rpc<{ name: string }>('workspace_join', { code })).name,
+  workspaceCode: () => rpc<string>('workspace_code', {}),
+  workspaceResetCode: () => rpc<string>('workspace_reset_code', {}),
   workspaceMembers: async (): Promise<WorkspaceMember[]> =>
     (await rpc<{ user_id: string | null; email: string; full_name: string; role: 'owner' | 'member'; pending: boolean }[]>('workspace_members', {}))
       .map((m) => ({ userId: m.user_id, email: m.email, fullName: m.full_name, role: m.role, pending: m.pending })),
@@ -496,6 +505,6 @@ Tekrar aktarılırsa yarıda kalan kısımdaki bazı kayıtlar (gider, mesai) ç
       online: false, me: null, readOnly: false, lastRefreshChanged: false, onRemoteChange: async () => () => undefined, connect: offline, refresh: offline, disconnect: () => Promise.resolve(),
       siteMembers: offline, siteShare: offline, siteUnshare: offline, copyInfo: async () => null, openCopy: offline,
       legacyAvailable: async () => false, importLegacy: offline,
-      workspaceCreate: offline, workspaceMembers: offline, workspaceAddMember: offline, workspaceRemoveMember: offline,
+      workspaceCreate: offline, workspaceJoin: offline, workspaceCode: offline, workspaceResetCode: offline, workspaceMembers: offline, workspaceAddMember: offline, workspaceRemoveMember: offline,
     };
 }
