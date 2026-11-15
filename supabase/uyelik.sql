@@ -1,4 +1,4 @@
--- EroMec üyelik modeli (schema.sql ve sync.sql'den SONRA çalıştırılır; tekrar çalıştırmak güvenlidir).
+-- Puanto üyelik modeli (schema.sql ve sync.sql'den SONRA çalıştırılır; tekrar çalıştırmak güvenlidir).
 -- Ayrı bir yönetici yoktur: giriş yapan her üye kendi açtığı şantiyeleri ve kendi yazdığı kayıtları görür.
 --   * Şantiyeyi açan kişi o şantiyenin üyesi olur; şantiyeye bağlı her kayıt şantiye üyelerine açıktır.
 --   * Şantiyesi olmayan kayıtlar (ör. şantiyesiz çalışan, genel gider) yalnızca yazan kişiye açıktır.

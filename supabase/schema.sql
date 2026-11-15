@@ -1,4 +1,4 @@
--- EroMec çevrimiçi veritabanı (Supabase / Postgres)
+-- Puanto çevrimiçi veritabanı (Supabase / Postgres)
 -- Supabase panelinde: SQL Editor → New query → bu dosyanın tamamını yapıştır → Run.
 -- Masaüstündeki SQLite şemasının (sürüm 6) karşılığıdır; para tutarları yine kuruş (bigint),
 -- tarihler 'yyyy-mm-dd' biçiminde date tipindedir.
@@ -311,8 +311,8 @@ create policy activity_insert on public.activity_log for insert to authenticated
 -- ───────────────────────── Varsayılan veriler ─────────────────────────
 
 insert into public.settings (key, value) values
-  ('companyName', 'Eroğlu Mechanic'),
-  ('appName', 'EroMec'),
+  ('companyName', 'Firmam'),
+  ('appName', 'Puanto'),
   ('currency', 'TRY'),
   ('dailyMinWageKurus', '0');
 
@@ -334,4 +334,4 @@ insert into public.attendance_statuses (code, short, label, color, paid_half, wo
   ('T', 'T', 'Resmi tatil', '#7e22ce', 2, 0, true, 7),
   ('H', 'H', 'Hafta tatili', '#4b5563', 2, 0, true, 8);
 
-insert into public.companies (name) values ('Eroğlu Mechanic');
+insert into public.companies (name) values ('Firmam');

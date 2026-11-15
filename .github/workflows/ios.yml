@@ -33,7 +33,7 @@ jobs:
         run: |
           VERSION=$(node -p "require('./package.json').version")
           xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
-            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/EroMec.xcarchive" archive \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/Puanto.xcarchive" archive \
             -allowProvisioningUpdates \
             -authenticationKeyPath "$RUNNER_TEMP/keys/AuthKey.p8" \
             -authenticationKeyID "${{ secrets.APPSTORE_API_KEY_ID }}" \
@@ -52,7 +52,7 @@ jobs:
             <key>signingStyle</key><string>automatic</string>
           </dict></plist>
           PLIST
-          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/EroMec.xcarchive" \
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/Puanto.xcarchive" \
             -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" -exportPath "$RUNNER_TEMP/export" \
             -allowProvisioningUpdates \
             -authenticationKeyPath "$RUNNER_TEMP/keys/AuthKey.p8" \

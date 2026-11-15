@@ -1,4 +1,4 @@
--- EroMec eşitleme katmanı (schema.sql'den SONRA çalıştırılır; tekrar çalıştırmak güvenlidir).
+-- Puanto eşitleme katmanı (schema.sql'den SONRA çalıştırılır; tekrar çalıştırmak güvenlidir).
 -- Uygulama hesaplarını cihazda yapar; açılışta bütün veriyi pull_all() ile alır,
 -- her kayıt işleminden sonra değişen satırları apply_changes() ile tek işlemde (transaction) gönderir.
 -- İki işlev de "security invoker"dır: satır bazlı yetkiler (RLS) aynen geçerlidir.

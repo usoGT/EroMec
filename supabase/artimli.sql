@@ -1,4 +1,4 @@
--- EroMec artımlı eşitleme ve anlık güncelleme (paylasim.sql'den SONRA çalıştırılır; tekrar çalıştırmak güvenlidir).
+-- Puanto artımlı eşitleme ve anlık güncelleme (paylasim.sql'den SONRA çalıştırılır; tekrar çalıştırmak güvenlidir).
 --   * Her satır ne zaman değiştiğini _changed_at sütununda tutar; silinen satırlar sync_deletes'e yazılır.
 --   * pull_since(zaman): yalnızca o zamandan sonra değişen/silinen satırları döndürür (her açılışta her şey inmez).
 --   * Tablolar supabase_realtime yayınına eklenir: başka cihazdaki değişiklik anında haber verilir.

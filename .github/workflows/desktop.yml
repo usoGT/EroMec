@@ -26,5 +26,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: Puanto-Kurulum
-          path: release/EroMec-Kurulum-*.exe
+          path: release/Puanto-Kurulum-*.exe
           retention-days: 30

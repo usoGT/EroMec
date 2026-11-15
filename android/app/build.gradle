@@ -1,8 +1,8 @@
 apply plugin: 'com.android.application'
 
 // Sürüm adı package.json'dan gelir; sürüm kodu GitHub Actions'ta çalışma numarasıdır (-PversionCode=...).
-def eromecVersion = new groovy.json.JsonSlurper().parse(file('../../package.json')).version
-def eromecVersionCode = project.hasProperty('versionCode') ? project.property('versionCode').toInteger() : 1
+def appVersion = new groovy.json.JsonSlurper().parse(file('../../package.json')).version
+def appVersionCode = project.hasProperty('versionCode') ? project.property('versionCode').toInteger() : 1
 // İmza: android/app/eromec.keystore ve EROMEC_* ortam değişkenleri varsa sürüm imzalanır (Play Store için).
 def keystoreFile = file('eromec.keystore')
 def canSign = keystoreFile.exists() && System.getenv('EROMEC_KEYSTORE_PASSWORD')
@@ -14,8 +14,8 @@ android {
         applicationId "app.puanto"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode eromecVersionCode
-        versionName eromecVersion
+        versionCode appVersionCode
+        versionName appVersion
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

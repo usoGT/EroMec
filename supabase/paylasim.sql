@@ -1,4 +1,4 @@
--- EroMec şantiye paylaşma (uyelik.sql'den SONRA çalıştırılır; tekrar çalıştırmak güvenlidir).
+-- Puanto şantiye paylaşma (uyelik.sql'den SONRA çalıştırılır; tekrar çalıştırmak güvenlidir).
 -- Şantiyeyi açan kişi (sahip), kayıtlı başka bir üyeyi e-postasıyla şantiyeye ekleyebilir.
 -- Eklenen üye o şantiyeyi ve şantiyeye bağlı bütün kayıtları (çalışan, puantaj, mesai, gider, bordro) görür ve yönetir.
 -- Sahip üyeyi istediği zaman çıkarabilir; üye de kendini şantiyeden çıkarabilir. Sahip çıkarılamaz.

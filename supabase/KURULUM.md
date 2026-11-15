@@ -47,7 +47,7 @@ Bilgisayarda denemek için: `.env.web.example` dosyasını `.env.web` adıyla ko
 Supabase'in hazır mail servisi saatte yalnızca 2 mail gönderir; gerçek kullanımda kayıt/şifre mailleri takılır.
 Ücretsiz bir SMTP servisi bağla (ör. **Resend**, ayda 3.000 mail ücretsiz):
 
-1. resend.com → hesap aç → **Domains → Add domain** (kendi alan adın varsa, ör. `eroglumechanic.com`) ve verilen DNS kayıtlarını ekle.
+1. resend.com → hesap aç → **Domains → Add domain** (kendi alan adın varsa, ör. `puanto.app`) ve verilen DNS kayıtlarını ekle.
    Alan adın yoksa önce bir tane al; Resend yalnızca doğrulanmış alan adından mail gönderir.
 2. Resend → **API Keys → Create API key** (Sending access).
 3. Supabase → **Authentication → Emails → SMTP Settings → Enable custom SMTP**:
