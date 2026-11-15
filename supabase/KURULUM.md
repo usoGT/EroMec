@@ -26,17 +26,17 @@ Yetki: her firma kendi **işletmesini** açar; işletmenin kayıtlarını (firma
 
 ## 2. Web sitesi (GitHub Pages)
 
-Depoya her push'ta testler geçerse site kendiliğinden yayınlanır: **https://usogt.github.io/EroMec/**
+Depoya her push'ta testler geçerse site kendiliğinden yayınlanır: **https://usogt.github.io/Puanto/**
 
-Bir kez yapılacaklar (github.com/usoGT/EroMec):
+Bir kez yapılacaklar (github.com/usoGT/Puanto):
 1. **Settings → Pages → Build and deployment → Source: GitHub Actions**
 2. **Settings → Secrets and variables → Actions → Variables** sekmesi → **New repository variable**:
    - `SUPABASE_URL` = Project URL (ör. `https://bpaeriysvjwhvyszjoxh.supabase.co`)
    - `SUPABASE_PUBLISHABLE_KEY` = publishable anahtar (`sb_publishable_...`)
 3. **Actions → Web yayını → Run workflow** (ya da bir sonraki push'u bekle).
 4. Supabase → **Authentication → URL Configuration**:
-   - **Site URL**: `https://usogt.github.io/EroMec/`
-   - **Redirect URLs**: `https://usogt.github.io/EroMec/**` ve yerel deneme için `http://localhost:5180/**`
+   - **Site URL**: `https://usogt.github.io/Puanto/`
+   - **Redirect URLs**: `https://usogt.github.io/Puanto/**` ve yerel deneme için `http://localhost:5180/**`
 
    Böylece onay ve şifre yenileme mailleri siteye döner.
 

@@ -5,7 +5,7 @@ Telefona özel: dışa aktarılan PDF/Excel paylaşma menüsüyle (WhatsApp, Dri
 
 ## Android (APK)
 
-1. github.com/usoGT/EroMec → **Actions → Android → Run workflow**.
+1. github.com/usoGT/Puanto → **Actions → Android → Run workflow**.
 2. Bitince sayfanın altındaki **Puanto-Android** dosyasını indir, içindeki `.apk`'yı telefona at.
 3. Telefonda dosyaya dokun → "Bilinmeyen kaynaklardan yüklemeye izin ver" → **Yükle**.
 
@@ -21,7 +21,7 @@ Bu APK hata ayıklama (debug) imzalıdır; kendi telefonlarınıza kurmak için 
 3. GitHub → **Settings → Secrets and variables → Actions → Secrets**:
    `ANDROID_KEYSTORE_BASE64` (dosyanın base64 hâli), `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` (`eromec`), `ANDROID_KEY_PASSWORD`.
 4. Android iş akışı artık imzalı `.aab` üretir; Play Console'a bu dosya yüklenir.
-   Gizlilik politikası adresi: `https://usogt.github.io/EroMec/gizlilik.html`
+   Gizlilik politikası adresi: `https://usogt.github.io/Puanto/gizlilik.html`
 
 ## iPhone (TestFlight)
 

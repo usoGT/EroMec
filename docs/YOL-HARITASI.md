@@ -8,7 +8,7 @@
 - Yetki: ayrı yönetici yok; her üye kendi açtığı şantiyeleri ve kendi yazdığı kayıtları görür. Firma, ayar, kategori ve fırçalar ortak.
 
 ## Faz 3 – Gerçek kullanıma hazırlık
-- [x] Web'i internete koy: GitHub Pages iş akışı (`.github/workflows/web.yml`), adres https://usogt.github.io/EroMec/
+- [x] Web'i internete koy: GitHub Pages iş akışı (`.github/workflows/web.yml`), adres https://usogt.github.io/Puanto/
 - [x] Masaüstündeki mevcut veriyi Supabase'e taşıma: Ayarlar → Masaüstü yedeğini aktar (`src/web/importBackup.ts`)
 - [x] Bir şantiyeyi başka üyeyle paylaşma: Şantiyeler → Paylaş, e-postayla (`supabase/paylasim.sql`)
 - [x] Ortak listeler (firma, ayar, kategori, fırça): karar → herkes düzenleyebilir (şimdiki gibi kalıyor)
@@ -28,7 +28,7 @@
 - [x] Capacitor ile Android projesi (`android/`) + APK iş akışı (`.github/workflows/android.yml`, imza anahtarı varsa .aab)
 - [x] iPhone projesi (`ios/`) + bulutta derleyip TestFlight'a yükleyen iş akışı (`ios.yml`; Apple hesabı olmadan denenemedi)
 - [x] Uygulama ikonu, açılış ekranı (`assets/`, `npm run mobile:assets`), web manifesti (ana ekrana ekle)
-- [x] Gizlilik politikası / KVKK metni: `src/renderer/public/gizlilik.html` → https://usogt.github.io/EroMec/gizlilik.html
+- [x] Gizlilik politikası / KVKK metni: `src/renderer/public/gizlilik.html` → https://usogt.github.io/Puanto/gizlilik.html
 - [x] Gizlilik metnine firma adresi ve iletişim e-postası eklendi
 - [ ] KULLANICI: Play Console (25 $) / Apple Developer (99 $/yıl) hesapları ve GitHub Secrets (`docs/TELEFON.md`)
 
@@ -43,7 +43,7 @@
 - [x] Her firma kendi işletmesi (`supabase/isletme.sql`): ayrı firma listesi, ayarlar, kategoriler, fırçalar, kayıtlar
 - [x] İşletme kurma ekranı, Ayarlar → İşletme ve üyeler (e-postayla ekle, davet, çıkar, ayrıl)
 - [x] Masaüstü eski EroMec verisini ilk açılışta yeni klasöre taşır
-- [ ] KULLANICI: GitHub deposunu "Puanto" olarak yeniden adlandırmak isterse site adresi değişir (Supabase Site URL de güncellenmeli)
+- [x] Depo usoGT/Puanto olarak yeniden adlandırıldı; site https://usogt.github.io/Puanto/
 
 ## Sırada ne olabilir
 - Gerçek kullanımdan gelen geri bildirimler

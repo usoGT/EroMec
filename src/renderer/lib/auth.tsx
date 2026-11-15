@@ -12,7 +12,7 @@ export const SERVER_CONFIGURED = URL !== '' && KEY !== '';
 /** Hesap düğmesi görünsün mü: tarayıcı/telefon sürümünde her zaman, masaüstünde sunucu varsa */
 export const ACCOUNTS_ENABLED = import.meta.env.MODE === 'web' || SERVER_CONFIGURED;
 /** Onay / şifre yenileme maillerinin döneceği adres. Masaüstünde (file://) web sitesine döner. */
-export const SITE_URL = (import.meta.env.VITE_SITE_URL as string | undefined)?.trim() || 'https://usogt.github.io/EroMec/';
+export const SITE_URL = (import.meta.env.VITE_SITE_URL as string | undefined)?.trim() || 'https://usogt.github.io/Puanto/';
 /** Telefon uygulaması (Capacitor) içinde mi */
 export const isNativeApp = () => !!(window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.();
 const redirectUrl = () => (/^https?:/.test(window.location.protocol) && !isNativeApp() ? window.location.origin + window.location.pathname : SITE_URL);
