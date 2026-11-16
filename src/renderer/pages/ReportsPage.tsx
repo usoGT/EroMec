@@ -11,6 +11,7 @@ import { useApp } from '../lib/context';
 import PageHeader from '../components/PageHeader';
 import { ScopeSelect } from '../components/SiteSelect';
 import { scopeToFilter, useSites } from '../lib/useSites';
+import ReportExpensePicker from './ReportExpensePicker';
 
 type Mode = 'day' | 'week' | 'month' | 'custom';
 const MODES: [Mode, string][] = [['day', 'Günlük'], ['week', 'Haftalık'], ['month', 'Aylık'], ['custom', 'Özel tarih aralığı']];
@@ -71,11 +72,16 @@ export default function ReportsPage({ onNavigate }: { onNavigate?: (p: PageId) =
     void load();
   }, [load]);
 
-  const exportAs = async (kind: 'csv' | 'pdf') => {
+  /** Dışa aktarmadan önce gider seçim penceresi açılır */
+  const [picking, setPicking] = useState<'csv' | 'pdf' | null>(null);
+  const filter = useMemo(() => scopeToFilter(scope), [scope]);
+  const closePicker = useCallback(() => setPicking(null), []);
+
+  const exportAs = async (kind: 'csv' | 'pdf', expenseIds?: number[]) => {
     if (!data || busy) return;
     setBusy(true);
     try {
-      const args = { ...range, ...scopeToFilter(scope), title: fullTitle };
+      const args = { ...range, ...scopeToFilter(scope), title: fullTitle, expenseIds };
       const r = kind === 'csv' ? await api.reportExportCsv(args) : await api.reportExportPdf(args);
       if (r.saved) toast(`Rapor kaydedildi: ${r.path}`);
     } catch (e) {
@@ -133,8 +139,8 @@ export default function ReportsPage({ onNavigate }: { onNavigate?: (p: PageId) =
         description="Dönem seçin; tutarlar veritabanındaki kayıtlardan hesaplanır."
         actions={
           <>
-            <button className="btn-secondary" disabled={!data || busy} onClick={() => void exportAs('csv')}><FileDown size={16} /> Excel / CSV olarak kaydet</button>
-            <button className="btn-secondary" disabled={!data || busy} onClick={() => void exportAs('pdf')}><FileText size={16} /> PDF olarak kaydet</button>
+            <button className="btn-secondary" disabled={!data || busy} onClick={() => setPicking('csv')}><FileDown size={16} /> Excel / CSV olarak kaydet</button>
+            <button className="btn-secondary" disabled={!data || busy} onClick={() => setPicking('pdf')}><FileText size={16} /> PDF olarak kaydet</button>
           </>
         }
       />
@@ -233,6 +239,10 @@ export default function ReportsPage({ onNavigate }: { onNavigate?: (p: PageId) =
           </div>
           </div>
         </div>
+      )}
+      {picking && (
+        <ReportExpensePicker kind={picking} range={range} filter={filter} onClose={closePicker}
+          onConfirm={(ids) => { const k = picking; setPicking(null); void exportAs(k, ids); }} />
       )}
     </div>
   );

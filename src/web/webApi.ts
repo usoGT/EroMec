@@ -386,12 +386,12 @@ Tekrar aktarılırsa yarıda kalan kısımdaki bazı kayıtlar (gider, mesai) ç
     copyTimer = setTimeout(() => void saveCopyNow(), 2000);
   };
   const extra: Partial<Record<keyof EroMecApi, Handler>> = {
-    reportExportCsv: async (a: { from: string; to: string; title: string } & SiteFilter) => {
+    reportExportCsv: async (a: { from: string; to: string; title: string; expenseIds?: number[] } & SiteFilter) => {
       const { buildReportCsv } = await import('../main/db/export');
       const data = service.reportData(a?.from, a?.to, String(a?.title ?? 'Rapor'), a);
       return deliver(`${safeFileName(`Puanto ${data.title}`)}.csv`, buildReportCsv(data), 'text/csv;charset=utf-8');
     },
-    reportExportPdf: async (a: { from: string; to: string; title: string } & SiteFilter) => {
+    reportExportPdf: async (a: { from: string; to: string; title: string; expenseIds?: number[] } & SiteFilter) => {
       const { buildReportHtml } = await import('../main/db/export');
       const data = service.reportData(a?.from, a?.to, String(a?.title ?? 'Rapor'), a);
       return deliverPdf(`${safeFileName(`Puanto ${data.title}`)}.pdf`, buildReportHtml(data));

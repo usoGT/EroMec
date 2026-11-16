@@ -115,14 +115,17 @@ export function createService(db: Db) {
     dbInfo: () => ({ path: db.filePath ?? '(bellek)', schemaVersion: getSchemaVersion(db) }),
 
     // Dışa aktarma ve yedekleme yardımcıları (dosya diyaloglarını ana süreç yönetir)
-    reportData: (from: string, to: string, title: string, filter?: SiteFilter): ReportData => {
+    /** expenseIds verilirse rapora yalnızca seçilen giderler girer (liste ve toplamlar) */
+    reportData: (from: string, to: string, title: string, filter?: SiteFilter & { expenseIds?: number[] }): ReportData => {
       const f = siteFilter(filter);
+      const ids = Array.isArray(filter?.expenseIds) ? filter!.expenseIds.map(Number) : undefined;
+      const all = expenses.listExpenses(db, { from, to, ...f }).reverse();
       return {
         title,
         scope: scopeLabel(f),
         settings: settings.getSettings(db),
-        summary: reports.summary(db, from, to, f),
-        expenses: expenses.listExpenses(db, { from, to, ...f }).reverse(),
+        summary: reports.summary(db, from, to, f, ids),
+        expenses: ids ? all.filter((e) => ids.includes(e.id)) : all,
         overtime: overtime.listOvertime(db, { from, to, ...f }).reverse(),
         generatedAt: new Date(),
       };

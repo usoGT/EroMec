@@ -242,17 +242,37 @@ test('Puanto uçtan uca senaryo', async () => {
   await app.evaluate(({ dialog: dlg }, p) => {
     dlg.showSaveDialog = (async () => ({ canceled: false, filePath: p })) as typeof dlg.showSaveDialog;
   }, csvPath);
+  // Önce "Rapora girecek giderler" penceresi açılır; varsayılan olarak hepsi seçilidir
   await page.getByRole('button', { name: 'Excel / CSV olarak kaydet' }).click();
-  await expect(page.getByText('Rapor kaydedildi')).toBeVisible();
+  const picker = page.getByRole('dialog', { name: 'Rapora girecek giderler' });
+  await expect(picker.getByTestId('picker-total')).toHaveText('46.900,00 ₺');
+  await picker.getByTestId('picker-confirm').click();
+  await expect(page.getByText('Rapor kaydedildi').first()).toBeVisible();
   const csv = fs.readFileSync(csvPath, 'utf8');
   expect(csv.charCodeAt(0)).toBe(0xfeff);
   expect(csv).toContain('TOPLAM MALİYET;17201,00');
   expect(csv).toContain('TOPLAM GİDER;46900,00');
   expect(csv).toContain('Şükrü Öztürk');
+
+  // Hiçbir gider seçilmezse raporda gider listesi boş, gider toplamı 0 olur; diğer giderler maliyetten de düşer
+  const csvNone = path.join(OUT_DIR, 'rapor-gidersiz.csv');
+  await app.evaluate(({ dialog: dlg }, p) => {
+    dlg.showSaveDialog = (async () => ({ canceled: false, filePath: p })) as typeof dlg.showSaveDialog;
+  }, csvNone);
+  await page.getByRole('button', { name: 'Excel / CSV olarak kaydet' }).click();
+  await picker.getByRole('button', { name: 'Hiçbirini seçme' }).click();
+  await expect(picker.getByTestId('picker-count')).toHaveText('0');
+  await picker.getByTestId('picker-confirm').click();
+  await expect.poll(() => fs.existsSync(csvNone)).toBe(true);
+  const csv2 = fs.readFileSync(csvNone, 'utf8');
+  expect(csv2).toContain('TOPLAM GİDER;0,00');
+  expect(csv2).toContain('TOPLAM MALİYET;901,00');
+
   await app.evaluate(({ dialog: dlg }, p) => {
     dlg.showSaveDialog = (async () => ({ canceled: false, filePath: p })) as typeof dlg.showSaveDialog;
   }, pdfPath);
   await page.getByRole('button', { name: 'PDF olarak kaydet' }).click();
+  await picker.getByTestId('picker-confirm').click();
   await expect.poll(() => fs.existsSync(pdfPath) && fs.readFileSync(pdfPath).subarray(0, 4).toString()).toBe('%PDF');
 
   // --- Ana sayfa gerçek kayıtlardan hesaplanır

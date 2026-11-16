@@ -256,3 +256,24 @@ describe('ana sayfa: firma/şantiye seçimi ve toplam maliyet', () => {
     expect(svc.dashboard({ today: '2026-11-16' }).allTimeTotalKurus).toBe(0);
   });
 });
+
+describe('rapor: gider seçimi', () => {
+  it('seçilen giderler listeye ve toplamlara girer, seçilmeyenler girmez', async () => {
+    const { svc, siteA } = await setup();
+    const cat = svc.categoriesList().find((c) => c.kind === 'other')!;
+    const a = svc.expenseCreate({ input: { date: '2026-11-02', name: 'Çimento', categoryId: cat.id, amountKurus: 10_000, isPaid: true, siteId: siteA.id } }).item!;
+    svc.expenseCreate({ input: { date: '2026-11-03', name: 'Kum', categoryId: cat.id, amountKurus: 5_000, isPaid: false, siteId: siteA.id } });
+
+    const all = svc.reportData('2026-11-01', '2026-11-30', 'Rapor');
+    expect(all.expenses.map((e) => e.name)).toEqual(['Çimento', 'Kum']);
+    expect(all.summary.expTotalKurus).toBe(15_000);
+
+    const one = svc.reportData('2026-11-01', '2026-11-30', 'Rapor', { expenseIds: [a.id] });
+    expect(one.expenses.map((e) => e.name)).toEqual(['Çimento']);
+    expect(one.summary).toMatchObject({ expTotalKurus: 10_000, costOtherKurus: 10_000, unpaidKurus: 0, paidKurus: 10_000 });
+
+    const none = svc.reportData('2026-11-01', '2026-11-30', 'Rapor', { expenseIds: [] });
+    expect(none.expenses).toHaveLength(0);
+    expect(none.summary.expTotalKurus).toBe(0);
+  });
+});

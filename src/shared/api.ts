@@ -68,8 +68,8 @@ export interface EroMecApi {
   dashboard(args: string | ({ today: string } & SiteFilter)): Promise<Dashboard>;
   summary(args: { from: string; to: string } & SiteFilter): Promise<Summary>;
   activityList(limit: number): Promise<ActivityEntry[]>;
-  reportExportCsv(args: { from: string; to: string; title: string } & SiteFilter): Promise<{ saved: boolean; path?: string }>;
-  reportExportPdf(args: { from: string; to: string; title: string } & SiteFilter): Promise<{ saved: boolean; path?: string }>;
+  reportExportCsv(args: { from: string; to: string; title: string; expenseIds?: number[] } & SiteFilter): Promise<{ saved: boolean; path?: string }>;
+  reportExportPdf(args: { from: string; to: string; title: string; expenseIds?: number[] } & SiteFilter): Promise<{ saved: boolean; path?: string }>;
 
   settingsGet(): Promise<AppSettings>;
   settingsSave(s: AppSettings): Promise<AppSettings>;

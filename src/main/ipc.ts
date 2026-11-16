@@ -40,7 +40,7 @@ export function registerIpc(service: Service, opts: { isTrustedUrl: (url: string
       nativeTheme.themeSource = saved.theme;
       return saved;
     },
-    reportExportCsv: async (a: { from: string; to: string; title: string } & SiteFilter, e) => {
+    reportExportCsv: async (a: { from: string; to: string; title: string; expenseIds?: number[] } & SiteFilter, e) => {
       const data = service.reportData(a?.from, a?.to, String(a?.title ?? 'Rapor'), a);
       const r = await dialog.showSaveDialog(win(e)!, {
         title: 'Raporu CSV olarak kaydet',
@@ -51,7 +51,7 @@ export function registerIpc(service: Service, opts: { isTrustedUrl: (url: string
       fs.writeFileSync(r.filePath, buildReportCsv(data), 'utf8');
       return { saved: true, path: r.filePath };
     },
-    reportExportPdf: async (a: { from: string; to: string; title: string } & SiteFilter, e) => {
+    reportExportPdf: async (a: { from: string; to: string; title: string; expenseIds?: number[] } & SiteFilter, e) => {
       const data = service.reportData(a?.from, a?.to, String(a?.title ?? 'Rapor'), a);
       const r = await dialog.showSaveDialog(win(e)!, {
         title: 'Raporu PDF olarak kaydet',

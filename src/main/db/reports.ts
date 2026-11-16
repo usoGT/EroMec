@@ -18,12 +18,21 @@ import { siteCondition } from './sites';
 import { payrollMonth } from './payroll';
 import { addDays } from '../../shared/dates';
 
-export function summary(db: Db, fromRaw: string, toRaw: string, filter?: SiteFilter): Summary {
+/**
+ * expenseIds verilirse (rapor için gider seçimi) yalnızca o gider kayıtları sayılır; boş dizi = hiç gider.
+ * Verilmezse dönemdeki bütün giderler sayılır.
+ */
+export function summary(db: Db, fromRaw: string, toRaw: string, filter?: SiteFilter, expenseIds?: number[]): Summary {
   const from = isoDate(fromRaw, 'Başlangıç tarihi');
   const to = isoDate(toRaw, 'Bitiş tarihi');
   if (from > to) fail('Başlangıç tarihi bitiş tarihinden sonra olamaz.');
   // Şantiye/firma seçildiyse yalnızca o şantiyelere ait gider ve mesailer sayılır.
-  const xs = siteCondition('x', filter);
+  const site = siteCondition('x', filter);
+  const pick = expenseIds ? expenseIds.map(Number).filter((n) => Number.isInteger(n) && n > 0) : null;
+  const pickSql = pick ? (pick.length ? `x.id IN (${pick.join(',')})` : '0') : null;
+  const xs = site || pickSql
+    ? { sql: [site?.sql, pickSql].filter(Boolean).join(' AND '), params: site?.params ?? [] }
+    : null;
   const os = siteCondition('o', filter);
 
   const byCat = db.all<{ name: string; kind: Summary['byCategory'][number]['kind']; kurus: number; paid: number; unpaid: number; cnt: number }>(
