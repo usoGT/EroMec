@@ -102,7 +102,7 @@ export default function AttendancePage() {
       if (row) setOtCell({ row, date });
       return;
     }
-    // Aynı durumdaki hücreye fırçayla basılırsa bu sürükleme silme olarak çalışır (aç/kapa)
+    // Aynı durumdaki hücreye fırçayla tıklanırsa hücre temizlenir (aç/kapa)
     const mode = brush === 'erase' || current === brush ? null : brush;
     painting.current = { mode, pending: new Map() };
     paintCell(employeeId, date);
@@ -268,8 +268,8 @@ export default function AttendancePage() {
                         <td
                           key={d}
                           data-cell={`${r.employeeId}:${d}`}
+                          // Yalnızca tıklanan hücre işaretlenir; fare basılıyken üzerinden geçilen hücreler değişmez.
                           onMouseDown={(e) => { e.preventDefault(); startPaint(r.employeeId, d, st); }}
-                          onMouseEnter={() => paintCell(r.employeeId, d)}
                           className={`relative h-9 cursor-pointer border border-slate-200 text-center font-bold hover:outline hover:outline-2 hover:outline-brand-500 ${!info && (dow === 0 || dow === 6) ? 'bg-slate-100' : ''}`}
                           style={info ? { background: info.color, color: textColorFor(info.color) } : undefined}
                           title={[info?.label, ot ? `Mesai: ${shortHours(ot)} saat` : ''].filter(Boolean).join(' · ') || undefined}

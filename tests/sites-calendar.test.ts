@@ -224,3 +224,35 @@ describe('migration 5 -> 6 (Kira ve Elektrik ve su kaldırılır)', () => {
     expect(svc.summary({ from: '2026-10-01', to: '2026-10-31' })).toMatchObject({ otherKurus: 1_580_000, unpaidKurus: 80_000 });
   });
 });
+
+describe('ana sayfa: firma/şantiye seçimi ve toplam maliyet', () => {
+  it('seçilen şantiye ya da firmaya göre hesaplar; toplam maliyet bütün geçmişi kapsar', async () => {
+    const { svc, main, other, siteA, siteB } = await setup();
+    const cat = svc.categoriesList().find((c) => c.kind === 'other')!;
+    const exp = (date: string, amountKurus: number, siteId: number, isPaid = true) =>
+      svc.expenseCreate({ input: { date, name: 'Malzeme', categoryId: cat.id, amountKurus, isPaid, siteId } });
+    exp('2025-03-10', 100_000, siteA.id);           // geçen yıl, A şantiyesi
+    exp('2026-11-16', 20_000, siteA.id, false);     // bugün, A, ödenmemiş
+    exp('2026-11-16', 50_000, siteB.id);            // bugün, B
+    svc.employeeCreate({ input: emp({ fullName: 'A Usta', siteId: siteA.id }) });
+    svc.employeeCreate({ input: emp({ fullName: 'B Usta', siteId: siteB.id }) });
+
+    const all = svc.dashboard({ today: '2026-11-16' });
+    expect(all).toMatchObject({ activeEmployeeCount: 2, todayTotalKurus: 70_000, allTimeTotalKurus: 170_000, totalUnpaidKurus: 20_000 });
+
+    const a = svc.dashboard({ today: '2026-11-16', siteId: siteA.id });
+    expect(a).toMatchObject({ activeEmployeeCount: 1, todayTotalKurus: 20_000, allTimeTotalKurus: 120_000, totalUnpaidKurus: 20_000 });
+
+    const b = svc.dashboard({ today: '2026-11-16', companyId: other.id });
+    expect(b).toMatchObject({ activeEmployeeCount: 1, todayTotalKurus: 50_000, allTimeTotalKurus: 50_000, totalUnpaidKurus: 0 });
+    expect(svc.dashboard({ today: '2026-11-16', companyId: main.id }).allTimeTotalKurus).toBe(120_000);
+
+    // Eski çağrı biçimi (düz tarih) de çalışır
+    expect(svc.dashboard('2026-11-16').allTimeTotalKurus).toBe(170_000);
+  });
+
+  it('hiç kayıt yokken toplam maliyet 0', async () => {
+    const { svc } = await setup();
+    expect(svc.dashboard({ today: '2026-11-16' }).allTimeTotalKurus).toBe(0);
+  });
+});

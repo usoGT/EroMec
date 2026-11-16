@@ -238,6 +238,8 @@ export interface Dashboard {
   todayTotalKurus: number;
   weekTotalKurus: number;
   monthTotalKurus: number;
+  /** İlk kayıttan bugüne (ve gelecek tarihli kayıtlar dahil) bütün maliyet */
+  allTimeTotalKurus: number;
   totalUnpaidKurus: number;
   recent: ActivityEntry[];
 }

@@ -72,7 +72,7 @@ test('puantaj: doldurma, işaretleme, Excel/PDF', async () => {
   await expect(cell(page, 'Ali Kaya', '2026-10-05')).toHaveText('');
   await cell(page, 'Ali Kaya', '2026-10-05').click();
 
-  // Sürükleyerek: Ücretli izin, 6-8 Ekim
+  // Fırça yalnızca tıklamayla işaretler: basılı tutup sürüklemek üzerinden geçilen hücreleri DEĞİŞTİRMEZ
   await page.getByRole('toolbar', { name: 'Puantaj fırçası' }).getByRole('button', { name: /Ücretli izin/ }).click();
   const box = async (d: string) => (await cell(page, 'Veli Demir', d).boundingBox())!;
   const s = await box('2026-10-06');
@@ -82,6 +82,11 @@ test('puantaj: doldurma, işaretleme, Excel/PDF', async () => {
   await page.mouse.move(s.x + s.width * 1.5, s.y + s.height / 2, { steps: 4 });
   await page.mouse.move(e.x + e.width / 2, e.y + e.height / 2, { steps: 4 });
   await page.mouse.up();
+  await expect(cell(page, 'Veli Demir', '2026-10-06')).toHaveText('İ');
+  for (const d of ['2026-10-07', '2026-10-08']) await expect(cell(page, 'Veli Demir', d)).toHaveText('8');
+  await expect(worked(page, 'Veli Demir')).toHaveText('26');
+  // Diğer günler tek tek tıklanarak işaretlenir
+  for (const d of ['2026-10-07', '2026-10-08']) await cell(page, 'Veli Demir', d).click();
   for (const d of ['2026-10-06', '2026-10-07', '2026-10-08']) await expect(cell(page, 'Veli Demir', d)).toHaveText('İ');
   await expect(worked(page, 'Veli Demir')).toHaveText('24');
 

@@ -113,24 +113,47 @@ export function summary(db: Db, fromRaw: string, toRaw: string, filter?: SiteFil
   };
 }
 
-export function dashboard(db: Db, todayRaw: string): Dashboard {
+/**
+ * Ana sayfa özeti. Firma ya da şantiye seçildiyse (filter) bütün sayılar yalnızca ona göre hesaplanır.
+ * allTimeTotalKurus: ilk kayıttan son kayda kadar (şimdiye kadarki) bütün maliyet — puantaj + mesai + diğer giderler.
+ */
+export function dashboard(db: Db, todayRaw: string, filter?: SiteFilter): Dashboard {
   const today = isoDate(todayRaw, 'Tarih');
+  const es = siteCondition('e', filter);
   const counts = db.get<{ total: number; active: number }>(
-    `SELECT COUNT(*) AS total, COALESCE(SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END),0) AS active FROM employees`,
+    `SELECT COUNT(*) AS total, COALESCE(SUM(CASE WHEN e.status = 'active' THEN 1 ELSE 0 END),0) AS active FROM employees e${es ? ` WHERE ${es.sql}` : ''}`,
+    es?.params ?? [],
   )!;
   const d = dayRange(today);
   const w = weekRange(today);
   const m = monthRange(today);
-  const day = summary(db, d.from, d.to);
-  const unpaid = db.get<{ k: number }>('SELECT COALESCE(SUM(amount_kurus),0) AS k FROM expenses WHERE is_paid = 0')!.k;
+  const day = summary(db, d.from, d.to, filter);
+  const xs = siteCondition('x', filter);
+  const unpaid = db.get<{ k: number }>(
+    `SELECT COALESCE(SUM(x.amount_kurus),0) AS k FROM expenses x WHERE x.is_paid = 0${xs ? ` AND ${xs.sql}` : ''}`,
+    xs?.params ?? [],
+  )!.k;
+
+  // Şimdiye kadarki toplam: en eski ve en yeni kayıt tarihleri arası (gelecek tarihli kayıtlar da dahil)
+  const span = db.get<{ a: string | null; b: string | null }>(
+    `SELECT MIN(d) AS a, MAX(d) AS b FROM (
+       SELECT MIN(date) AS d FROM attendance UNION ALL SELECT MAX(date) FROM attendance
+       UNION ALL SELECT MIN(date) FROM overtime_records UNION ALL SELECT MAX(date) FROM overtime_records
+       UNION ALL SELECT MIN(date) FROM expenses UNION ALL SELECT MAX(date) FROM expenses) WHERE d IS NOT NULL`,
+  );
+  const allTimeTotalKurus = span?.a
+    ? summary(db, span.a, span.b && span.b > today ? span.b : today, filter).costTotalKurus
+    : 0;
+
   return {
     today,
     activeEmployeeCount: counts.active,
     totalEmployeeCount: counts.total,
     todayOvertimeMinutes: day.overtimeMinutes,
     todayTotalKurus: day.costTotalKurus,
-    weekTotalKurus: summary(db, w.from, w.to).costTotalKurus,
-    monthTotalKurus: summary(db, m.from, m.to).costTotalKurus,
+    weekTotalKurus: summary(db, w.from, w.to, filter).costTotalKurus,
+    monthTotalKurus: summary(db, m.from, m.to, filter).costTotalKurus,
+    allTimeTotalKurus,
     totalUnpaidKurus: unpaid,
     recent: listActivity(db, 10),
   };

@@ -96,38 +96,36 @@ describe('işletmeler', () => {
   });
 });
 
-describe('şantiye paylaşma', () => {
-  it('sahip işletmedeki üyeyi ekler; üye şantiyeyi ve kayıtlarını görür; çıkarılınca göremez', async () => {
+describe('ekip görünürlüğü (ekip.sql)', () => {
+  it('şef firmadaki her şeyi görür ve düzenler; başka firma hiçbir şey görmez; çıkarılınca göremez', async () => {
     const boss = await owner('p-patron@x.com');
-    const chief = await member('p-sef@x.com', boss); // şantiyeyi açan üye
-    const friend = await member('Ortak@X.com', boss);
+    const chief = await member('p-sef@x.com', boss);
     const other = await owner('p-yabanci@x.com');
-    const c = await firstCompany(chief);
-    const [s] = await pg.as<{ id: number }>(chief, `insert into sites (company_id, name) values ($1, 'Ortak Şantiye') returning id`, [c]);
-    await pg.as(chief, `insert into employees (employee_no, full_name, position, site_id) values ('P9001', 'Usta Bir', 'Usta', $1)`, [s.id]);
+    const c = await firstCompany(boss);
+    const [s] = await pg.as<{ id: number }>(boss, `insert into sites (company_id, name) values ($1, 'Sahibin Şantiyesi') returning id`, [c]);
+    await pg.as(boss, `insert into employees (employee_no, full_name, position, site_id) values ('P9001', 'Usta Bir', 'Usta', $1)`, [s.id]);
+    await pg.as(boss, `insert into employees (employee_no, full_name, position) values ('P9003', 'Şantiyesiz Usta', 'Usta')`);
 
-    expect((await pg.as(friend, 'select * from employees')).length).toBe(0);
-    expect((await pg.as(boss, 'select * from employees')).length).toBe(1); // işletme sahibi her şeyi görür
-    await expect(pg.rpc(friend, 'site_share', { sid: s.id, member_email: 'p-patron@x.com' })).rejects.toThrow(/yalnızca açan kişi/);
-    await expect(pg.rpc(chief, 'site_share', { sid: s.id, member_email: 'p-yabanci@x.com' })).rejects.toThrow(/işletmenizde bir üye yok/);
+    // Şef hiçbir paylaşım olmadan sahibin şantiyesini ve bütün çalışanları görür
+    expect((await pg.as(chief, 'select * from sites')).length).toBe(1);
+    expect((await pg.as(chief, 'select * from employees')).length).toBe(2);
+    expect((await pg.rpc<{ data: Record<string, unknown[]> }>(chief, 'pull_all')).data.employees).toHaveLength(2);
+    // ve düzenleyebilir
+    await pg.as(chief, `insert into employees (employee_no, full_name, position, site_id) values ('P9002', 'Usta İki', 'Usta', $1)`, [s.id]);
+    expect((await pg.as(boss, 'select * from employees')).length).toBe(3);
 
-    const added = await pg.rpc<{ email: string }>(chief, 'site_share', { sid: s.id, member_email: ' ortak@x.com ' });
-    expect(added.email).toBe('Ortak@X.com');
-    expect((await pg.as(friend, 'select * from sites')).length).toBe(1);
-    expect((await pg.as(friend, 'select * from employees')).length).toBe(1);
+    // Başka firma görmez, kayıt da ekleyemez
     expect((await pg.as(other, 'select * from employees')).length).toBe(0);
+    expect((await pg.as(other, 'select * from sites')).length).toBe(0);
+    await expect(pg.as(other, `insert into employees (employee_no, full_name, position, site_id) values ('P9100', 'Sızma', 'Usta', $1)`, [s.id])).rejects.toThrow();
 
-    const list = await pg.as<{ email: string; is_owner: boolean }>(friend, 'select * from site_members_list($1)', [s.id]);
-    expect(list.map((m) => [m.email, m.is_owner])).toEqual([['p-sef@x.com', true], ['Ortak@X.com', false]]);
-    await expect(pg.as(other, 'select * from site_members_list($1)', [s.id])).rejects.toThrow(/görme yetkiniz yok/);
+    // Üye yönetimi ve firma kodu hâlâ yalnızca sahipte
+    await expect(pg.rpc(chief, 'workspace_code')).rejects.toThrow(/yalnızca işletme sahibi/);
+    await expect(pg.rpc(chief, 'workspace_add_member', { member_email: 'x@x.com' })).rejects.toThrow(/yalnızca işletme sahibi/);
 
-    await pg.as(friend, `insert into employees (employee_no, full_name, position, site_id) values ('P9002', 'Usta İki', 'Usta', $1)`, [s.id]);
-    expect((await pg.as(chief, 'select * from employees where site_id = $1', [s.id])).length).toBe(2);
-
-    await expect(pg.rpc(friend, 'site_unshare', { sid: s.id, member_id: chief })).rejects.toThrow(/çıkarılamaz/);
-    await expect(pg.rpc(other, 'site_unshare', { sid: s.id, member_id: friend })).rejects.toThrow(/yetkiniz yok/);
-    await pg.rpc(chief, 'site_unshare', { sid: s.id, member_id: friend });
-    expect((await pg.as(friend, 'select * from employees')).length).toBe(0);
+    // Firmadan çıkarılan şef artık hiçbir şey görmez
+    await pg.rpc(boss, 'workspace_remove_member', { member_id: chief });
+    expect((await pg.as(chief, 'select * from employees')).length).toBe(0);
   });
 });
 
@@ -169,11 +167,11 @@ describe('artımlı indirme', () => {
 });
 
 describe('kurulum', () => {
-  it('isletme.sql ve kvkk.sql (sırayla) tekrar çalıştırılabilir; veriler korunur', async () => {
+  it('isletme.sql, kvkk.sql ve ekip.sql (sırayla) tekrar çalıştırılabilir; veriler korunur', async () => {
     const fs = await import('node:fs');
     const path = await import('node:path');
     const a = await owner('tekrar@x.com', 'Tekrar Ltd.');
-    for (const f of ['isletme.sql', 'kvkk.sql']) await pg.db.exec(fs.readFileSync(path.join(__dirname, '..', 'supabase', f), 'utf8'));
+    for (const f of ['isletme.sql', 'kvkk.sql', 'ekip.sql']) await pg.db.exec(fs.readFileSync(path.join(__dirname, '..', 'supabase', f), 'utf8'));
     expect((await pg.as<{ name: string }>(a, 'select name from companies')).map((c) => c.name)).toEqual(['Tekrar Ltd.']);
   });
 });

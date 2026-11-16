@@ -104,7 +104,9 @@ export function createService(db: Db) {
     expenseDelete: (id: number) => expenses.deleteExpense(db, id),
     salaryPaymentCreate: (input: SalaryPaymentInput) => expenses.createSalaryPayment(db, input),
 
-    dashboard: (today: string) => reports.dashboard(db, today),
+    // Eski çağrılar için düz tarih de kabul edilir; yenisi { today, siteId?, companyId? }
+    dashboard: (arg: string | ({ today: string } & SiteFilter)) =>
+      typeof arg === 'string' ? reports.dashboard(db, arg) : reports.dashboard(db, arg?.today, siteFilter(arg)),
     summary: (a: { from: string; to: string } & SiteFilter) => reports.summary(db, a?.from, a?.to, siteFilter(a)),
     activityList: (limit: number) => listActivity(db, limit),
 

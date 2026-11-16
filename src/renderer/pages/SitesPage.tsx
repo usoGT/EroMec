@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Building2, Eye, HardHat, Pencil, Plus, Share2, Trash2, UserPlus } from 'lucide-react';
+import { Building2, Eye, HardHat, Pencil, Plus, Trash2, UserPlus } from 'lucide-react';
 import type { Company, Employee, Site, Summary } from '../../shared/types';
 import { formatDate, monthRange, todayIso } from '../../shared/dates';
 import { formatMinutes } from '../../shared/overtime';
@@ -11,8 +11,6 @@ import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import { SiteSelect } from '../components/SiteSelect';
 import { CompanyForm, SiteForm } from './SiteForms';
-import SiteShareModal from '../components/SiteShareModal';
-import { useSession } from '../lib/session';
 
 export default function SitesPage() {
   const { toast, confirm, showError } = useApp();
@@ -20,9 +18,6 @@ export default function SitesPage() {
   const [companyEdit, setCompanyEdit] = useState<Company | 'new' | null>(null);
   const [siteEdit, setSiteEdit] = useState<Site | 'new' | null>(null);
   const [detail, setDetail] = useState<Site | null>(null);
-  const [share, setShare] = useState<Site | null>(null);
-  // Paylaşma yalnızca çevrimiçi sürümde (giriş yapılmışken) vardır.
-  const canShare = useSession().me !== null;
 
   const removeCompany = async (c: Company) => {
     if (!(await confirm({ title: 'Firmayı sil', message: <>“<b>{c.name}</b>” silinsin mi?</>, confirmText: 'Sil', danger: true }))) return;
@@ -80,11 +75,10 @@ export default function SitesPage() {
             render: (r) => <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${r.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-slate-200 text-slate-600'}`}>{r.status === 'active' ? 'Devam ediyor' : 'Tamamlandı'}</span>,
           },
           {
-            key: 'actions', header: 'İşlemler', width: canShare ? '290px' : '220px',
+            key: 'actions', header: 'İşlemler', width: '220px',
             render: (r) => (
               <div className="flex gap-1">
                 <button className="btn-link" onClick={() => setDetail(r)}><Eye size={14} /> Detay</button>
-                {canShare && <button className="btn-link" data-testid="site-share" onClick={() => setShare(r)}><Share2 size={14} /> Paylaş</button>}
                 <button className="btn-link" onClick={() => setSiteEdit(r)}><Pencil size={14} /> Düzenle</button>
                 <button className="btn-link-danger" onClick={() => void removeSite(r)}><Trash2 size={14} /> Sil</button>
               </div>
@@ -116,7 +110,6 @@ export default function SitesPage() {
       />
       {companyEdit && <CompanyForm company={companyEdit === 'new' ? undefined : companyEdit} onClose={() => setCompanyEdit(null)} onSaved={reload} />}
       {siteEdit && <SiteForm site={siteEdit === 'new' ? undefined : siteEdit} companies={companies} onClose={() => setSiteEdit(null)} onSaved={reload} />}
-      {share && <SiteShareModal site={share} onClose={() => setShare(null)} />}
       {detail && <SiteDetailModal site={detail} sites={sites} onClose={() => setDetail(null)} onChanged={reload} />}
     </div>
   );

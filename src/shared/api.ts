@@ -64,7 +64,8 @@ export interface EroMecApi {
   expenseDelete(id: number): Promise<void>;
   salaryPaymentCreate(input: SalaryPaymentInput): Promise<Expense>;
 
-  dashboard(today: string): Promise<Dashboard>;
+  /** Ana sayfa özeti; firma/şantiye verilirse yalnızca ona göre hesaplanır */
+  dashboard(args: string | ({ today: string } & SiteFilter)): Promise<Dashboard>;
   summary(args: { from: string; to: string } & SiteFilter): Promise<Summary>;
   activityList(limit: number): Promise<ActivityEntry[]>;
   reportExportCsv(args: { from: string; to: string; title: string } & SiteFilter): Promise<{ saved: boolean; path?: string }>;

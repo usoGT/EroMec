@@ -103,7 +103,7 @@ export default function WorkspaceSection() {
       <h2 className="mb-1 font-semibold">İşletme ve üyeler</h2>
       <p className="mb-3 text-sm text-slate-600">
         <b>{me.workspaceName ?? 'İşletmen'}</b> · {isOwner ? 'sahibisin' : 'üyesin'}. İşletmedeki kayıtları başka işletmeler göremez.
-        {isOwner ? ' Sahip olarak bütün şantiyeleri görürsün; üyeler kendi açtıkları ve kendileriyle paylaşılan şantiyeleri görür.' : ''}
+        {' Firmadaki herkes bütün şantiyeleri ve kayıtları görür ve düzenler; üye ekleme/çıkarma ve firma kodu yalnızca sahipte.'}
       </p>
       <FormError message={error} />
       {isOwner && !readOnly && code && (

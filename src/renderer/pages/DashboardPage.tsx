@@ -1,8 +1,10 @@
 // Ana sayfa: özet kartları, hızlı işlemler, bugünkü puantaj, bu ayın bordrosu, ödenmemiş giderler, şantiyeler, son işlemler.
 import { useCallback, useEffect, useState } from 'react';
 import {
-  AlertCircle, Banknote, CalendarDays, CalendarRange, Check, ClipboardCheck, Clock, FileText, HardHat, Receipt, Users, Wallet,
+  AlertCircle, Banknote, CalendarDays, CalendarRange, Check, ClipboardCheck, Clock, FileText, HardHat, Receipt, Sigma, Users, Wallet,
 } from 'lucide-react';
+import { scopeToFilter, useSites } from '../lib/useSites';
+import { ScopeSelect } from '../components/SiteSelect';
 import type { AttendanceMonth, Category, Dashboard, Employee, Expense, PayrollMonth, Site, Summary } from '../../shared/types';
 import { formatDate, formatDateTime, monthRange, todayIso, MONTH_NAMES } from '../../shared/dates';
 import { formatMinutes } from '../../shared/overtime';
@@ -43,35 +45,62 @@ function Panel({ title, icon, action, children, testId }: { title: string; icon:
   );
 }
 
+/** Ana sayfada seçilen firma/şantiye bu cihazda hatırlanır */
+const SCOPE_KEY = 'puanto.dashboardScope';
+const readScope = () => {
+  try {
+    return localStorage.getItem(SCOPE_KEY) ?? '';
+  } catch {
+    return '';
+  }
+};
+
 export default function DashboardPage({ onNavigate }: { onNavigate: (p: PageId) => void }) {
   const { money, toast, showError } = useApp();
+  const { companies, sites: allSites } = useSites();
+  const [scope, setScopeState] = useState(readScope);
   const [data, setData] = useState<Dashboard | null>(null);
   const [x, setX] = useState<Extra | null>(null);
   const [open, setOpen] = useState<'bulk' | 'overtime' | 'expense' | null>(null);
   const today = todayIso();
   const month = today.slice(0, 7);
 
+  const setScope = (v: string) => {
+    setScopeState(v);
+    try {
+      localStorage.setItem(SCOPE_KEY, v);
+    } catch {
+      /* depolama kapalıysa yalnızca bu oturumda geçerli */
+    }
+  };
+
   const load = useCallback(async () => {
     try {
+      const f = scopeToFilter(scope);
       const [d, attendance, payroll, unpaid, employees, sites, categories] = await Promise.all([
-        api.dashboard(today), api.attendanceMonth({ month }), api.payrollMonth({ month }), api.expensesList({ paid: 'unpaid' }),
+        api.dashboard({ today, ...f }), api.attendanceMonth({ month, ...f }), api.payrollMonth({ month, ...f }), api.expensesList({ paid: 'unpaid', ...f }),
         api.employeesList(), api.sitesList(), api.categoriesList(),
       ]);
       const m = monthRange(today);
-      const active = sites.filter((s) => s.status === 'active').slice(0, 6);
+      // Şantiye tablosu da seçime uyar: firma seçildiyse o firmanın, şantiye seçildiyse yalnızca o şantiye
+      const active = sites.filter((s) => s.status === 'active' && (!f.siteId || s.id === f.siteId) && (!f.companyId || s.companyId === f.companyId)).slice(0, 6);
       const sums = await Promise.all(active.map((s) => api.summary({ ...m, siteId: s.id })));
       setData(d);
       setX({ attendance, payroll, unpaid, employees, sites, categories, siteMonth: active.map((site, i) => ({ site, sum: sums[i] })) });
     } catch (e) {
       showError(e);
     }
-  }, [today, month, showError]);
+  }, [today, month, scope, showError]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
   if (!data || !x) return <div className="text-slate-500">Yükleniyor…</div>;
+
+  const f = scopeToFilter(scope);
+  const scopeLabel = f.siteId ? allSites.find((s) => s.id === f.siteId)?.name
+    : f.companyId ? `${companies.find((c) => c.id === f.companyId)?.name ?? ''} (bütün şantiyeleri)` : '';
 
   // Bugünkü puantaj
   const statusMap = toStatusMap(x.attendance.statuses);
@@ -107,13 +136,14 @@ export default function DashboardPage({ onNavigate }: { onNavigate: (p: PageId) 
 
   return (
     <div>
-      <PageHeader title="Ana Sayfa" description={`Bugün: ${formatDate(data.today)}`} />
+      <PageHeader title="Ana Sayfa" description={`Bugün: ${formatDate(data.today)}${scopeLabel ? ` · ${scopeLabel}` : ''}`}
+        actions={<ScopeSelect companies={companies} sites={allSites} value={scope} onChange={setScope} className="input w-72 max-md:w-full" />} />
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6" data-testid="dashboard-cards">
         <StatCard label="Toplam çalışan" icon={<Users size={18} />} value={data.activeEmployeeCount} hint={`Aktif çalışan · kayıtlı toplam ${data.totalEmployeeCount}`} />
-        <StatCard label="Bugünkü mesai" icon={<Clock size={18} />} value={formatMinutes(data.todayOvertimeMinutes)} hint="Mola düşülmüş toplam süre" />
         <StatCard label="Bugünkü maliyet" icon={<Receipt size={18} />} value={money(data.todayTotalKurus)} hint="Puantaj + mesai + diğer" />
         <StatCard label="Bu haftaki maliyet" icon={<CalendarRange size={18} />} value={money(data.weekTotalKurus)} hint="Pazartesi – Pazar" />
         <StatCard label="Bu ayki maliyet" icon={<CalendarDays size={18} />} value={money(data.monthTotalKurus)} hint="Puantaj + mesai + diğer" />
+        <StatCard label="Toplam maliyet" icon={<Sigma size={18} />} value={money(data.allTimeTotalKurus)} hint="Şimdiye kadarki bütün kayıtlar" />
         <StatCard label="Ödenmemiş borç" icon={<AlertCircle size={18} />} value={money(data.totalUnpaidKurus)} hint="Tüm ödenmemiş giderler" tone={data.totalUnpaidKurus > 0 ? 'warn' : 'default'} />
       </div>
 

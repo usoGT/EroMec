@@ -13,6 +13,7 @@
    5. `artimli.sql` (yalnızca değişenleri indirme + anlık güncelleme)
    6. `isletme.sql` (her firmanın ayrı işletme alanı)
    7. `kvkk.sql` (kan grubu kaldırıldı, açık rıza kaydı, firma kodu deneme sınırı)
+   8. `ekip.sql` (şefler de firmadaki her şeyi görür)
 
    `isletme.sql` tekrar çalıştırılırsa ardından `kvkk.sql` de çalıştırılmalı (bazı işlevleri günceller).
 
@@ -24,7 +25,7 @@
 
 Yetki: her firma kendi **işletmesini** açar; işletmenin kayıtlarını (firma listesi, ayarlar, kategoriler, fırçalar, şantiyeler,
 çalışanlar…) başka işletmeler göremez. İşletme sahibi **Ayarlar → İşletme ve üyeler**'den kişileri e-postayla ekler
-(kayıtlı değilse kayıt olunca katılır). Sahip her şeyi görür; üyeler kendi açtıkları ve kendileriyle paylaşılan şantiyeleri görür
+(kayıtlı değilse kayıt olunca katılır). Firmadaki herkes (şefler dahil) bütün şantiyeleri ve kayıtları görür; üye ekleme/çıkarma ve firma kodu yalnızca sahipte
 (**Şantiyeler → Paylaş**). Giriş yapmamış biri hiçbir şey göremez.
 
 ## 2. Web sitesi (GitHub Pages)
