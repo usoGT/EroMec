@@ -69,7 +69,7 @@ test('şantiyeler, toplu mesai, takvim ve günlük rapor', async () => {
       if (tc) await f.locator('input[name=nationalId]').fill(tc);
       if (iban) await f.locator('input[name=iban]').fill(iban);
       await f.locator('input[name=bankName]').fill('Ziraat Bankası');
-      await f.locator('select[name=bloodType]').selectOption('A Rh+');
+      await expect(f.locator('select[name=bloodType]')).toHaveCount(0); // kan grubu artık tutulmuyor
     }
     await f.getByRole('button', { name: 'Kaydet' }).click();
     return f;

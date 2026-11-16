@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { LogIn, LogOut, RefreshCw, UserPlus } from 'lucide-react';
-import { authErrorMessage, SERVER_CONFIGURED, useAuth } from '../lib/auth';
+import { authErrorMessage, PRIVACY_URL, SERVER_CONFIGURED, useAuth } from '../lib/auth';
 import { useApp } from '../lib/context';
 import { useSession } from '../lib/session';
 import Modal from './Modal';
@@ -18,6 +18,8 @@ export default function AccountModal({ onClose, initialTab = 'login' }: { onClos
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [password2, setPassword2] = useState('');
+  /** KVKK açık rıza kutusu (önceden işaretli değildir) */
+  const [consent, setConsent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -51,6 +53,7 @@ export default function AccountModal({ onClose, initialTab = 'login' }: { onClos
     if (fullName.trim().length < 3) return setError('Adınızı ve soyadınızı girin.');
     if (password.length < 8) return setError('Şifre en az 8 karakter olmalı.');
     if (password !== password2) return setError('Şifreler birbiriyle aynı değil.');
+    if (!consent) return setError('Kayıt olmak için aydınlatma metnini okuyup açık rıza kutusunu işaretlemelisin.');
     void run(async () => {
       const { needsConfirm } = await signUp(fullName.trim(), mail, password);
       if (needsConfirm) {
@@ -85,6 +88,7 @@ export default function AccountModal({ onClose, initialTab = 'login' }: { onClos
             <div className="truncate text-sm text-slate-500" data-testid="account-email">{account.email}</div>
           </div>
         </div>
+        <a href={PRIVACY_URL} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-sm text-red-700 underline">KVKK Aydınlatma Metni</a>
         {me && (
           <button className="btn-secondary mt-4" disabled={refreshing} onClick={() => void refresh().then(() => toast('Veriler güncellendi.'))}>
             <RefreshCw size={16} /> {refreshing ? 'Yenileniyor…' : 'Verileri yenile'}
@@ -125,6 +129,18 @@ export default function AccountModal({ onClose, initialTab = 'login' }: { onClos
           <Field label="Şifre (tekrar)" required>
             <input name="password2" type="password" autoComplete="new-password" className="input" value={password2} onChange={(e) => setPassword2(e.target.value)} />
           </Field>
+        )}
+        {tab === 'register' && (
+          <div className="grid gap-2 rounded border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm">
+            <p className="text-slate-700">
+              Kişisel verilerinin nasıl işlendiğini{' '}
+              <a href={PRIVACY_URL} target="_blank" rel="noopener noreferrer" className="font-medium text-red-700 underline" data-testid="privacy-link">KVKK Aydınlatma Metni</a>'nde okuyabilirsin.
+            </p>
+            <label className="flex items-start gap-2 text-slate-800">
+              <input type="checkbox" name="kvkkConsent" className="mt-0.5 h-4 w-4 shrink-0" checked={consent} onChange={(e) => setConsent(e.target.checked)} data-testid="kvkk-consent" />
+              <span>Aydınlatma metninde belirtilen kişisel verilerimin, belirtilen amaçlarla işlenmesine ve yurt dışındaki sunucularda saklanmasına <b>açık rıza veriyorum</b>.</span>
+            </label>
+          </div>
         )}
         <button type="submit" className="hidden" aria-hidden tabIndex={-1} />
       </form>

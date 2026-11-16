@@ -40,7 +40,6 @@ export default function EmployeeDetailModal({ employeeId, employees, onClose, on
     ['Banka', e.bankName || '—'],
     ['Doğum tarihi', formatDate(e.birthDate) || '—'],
     ['SGK sicil no', e.sgkNo || '—'],
-    ['Kan grubu', e.bloodType || '—'],
     ['Adres', e.address || '—'],
     ['Acil durum kişisi', [e.emergencyName, e.emergencyPhone].filter(Boolean).join(' · ') || '—'],
     ['Durum', <StatusBadge key="s" status={e.status} />],

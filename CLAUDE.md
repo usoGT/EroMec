@@ -13,12 +13,13 @@
 - `src/main` – Electron ana süreç. Derlemede Supabase değerleri varsa (`.env.web` ya da `VITE_SUPABASE_*` ortam değişkenleri, `scripts/server-env.mjs`) masaüstü de girişle çalışır ve arayüz web motorunu (`src/web`) kullanır; yoksa veriler PC'deki dosyada, IPC ile (`window.eromecDesktop`). `src/main/host.ts`: son kopya + günlük otomatik yedek. `EROMEC_DATA_DIR` verilirse Electron profili de oraya gider.
 - `src/renderer` – React + Tailwind arayüz. Telefonda (<768px) alt menü ve kart listeler (`useIsMobile`).
 - `src/web` – tarayıcı/telefon sürümü: `webApi.ts` (window.eromec), `engine.ts` + `sync.ts` (Supabase eşitleme).
-- `supabase/schema.sql` + `sync.sql` + `uyelik.sql` + `paylasim.sql` + `artimli.sql` + `isletme.sql` (bu sırayla çalışır; `tests/pg.ts` hepsini PGlite'ta kurar) – sunucu şeması, RLS ve eşitleme işlevleri. Proje ref: `bpaeriysvjwhvyszjoxh`.
+- `supabase/schema.sql` + `sync.sql` + `uyelik.sql` + `paylasim.sql` + `artimli.sql` + `isletme.sql` + `kvkk.sql` (bu sırayla çalışır; `tests/pg.ts` hepsini PGlite'ta kurar) – sunucu şeması, RLS ve eşitleme işlevleri. Proje ref: `bpaeriysvjwhvyszjoxh`.
 - Yetki: çok firmalı. Her kayıt bir işletmeye (`workspace_id`, isletme.sql) aittir; işletmeler birbirini görmez. Kullanıcı tek işletmededir (`profiles.workspace_id`, rol owner/member). Sahip işletmesinde her şeyi görür; üyeler kendi açtığı/paylaşılan şantiyeleri (uyelik.sql, paylasim.sql). Firma, ayar, kategori, fırça işletme içinde ortak. Varsayılan listeler `template_*` tablolarından `workspace_create` ile kopyalanır. İstemci satırları işletmesiz gönderir, sunucu `my_workspace()` ile ekler.
 - Ad: Puanto (eski adı EroMec). Paket kimliği `app.puanto`. İç adlar (`window.eromec`, `EROMEC_*`, `eromec.db`) bilerek değiştirilmedi. Masaüstü ilk açılışta eski `%APPDATA%\EroMec` verisini kopyalar.
 - Web yayını: GitHub Pages (`.github/workflows/web.yml`), Supabase değerleri depo değişkenlerinde (`SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`). Masaüstü kurulumu (`desktop.yml`), Android (`android.yml`), iPhone/TestFlight (`ios.yml`) da Actions'ta.
 - Telefon: Capacitor (`capacitor.config.json`, `android/`, `ios/`), webDir `dist-web`. Telefona özel kod `src/web/native.ts` (paylaşma, HTML→PDF, geri tuşu). Ayrıntı: `docs/TELEFON.md`.
 - Eşitleme: tam indirme `pull_all`, sonra artımlı `pull_since` (`applyIncremental`), Realtime ile anlık; internet yoksa son kopya salt okunur (`READ_METHODS`).
+- KVKK: kayıtta aydınlatma linki + ayrı açık rıza kutusu (rıza zamanı/sürümü `profiles.kvkk_consent_at/kvkk_version`, sürüm `KVKK_VERSION` = gizlilik.html'deki sürüm). Kan grubu tutulmaz (sunucuda CHECK). İhlal planı: `docs/IHLAL-PROSEDURU.md`.
 - Para kuruş (tam sayı), tarih ekranda gg.aa.yyyy, hafta Pazartesi başlar.
 
 ## Komutlar

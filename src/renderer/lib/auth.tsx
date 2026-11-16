@@ -13,6 +13,9 @@ export const SERVER_CONFIGURED = URL !== '' && KEY !== '';
 export const ACCOUNTS_ENABLED = import.meta.env.MODE === 'web' || SERVER_CONFIGURED;
 /** Onay / şifre yenileme maillerinin döneceği adres. Masaüstünde (file://) web sitesine döner. */
 export const SITE_URL = (import.meta.env.VITE_SITE_URL as string | undefined)?.trim() || 'https://usogt.github.io/Puanto/';
+/** KVKK aydınlatma metni (herkese açık sayfa) ve sürümü: metin değişirse sürüm güncellenir */
+export const PRIVACY_URL = `${SITE_URL}gizlilik.html`;
+export const KVKK_VERSION = '2026-11-16';
 /** Telefon uygulaması (Capacitor) içinde mi */
 export const isNativeApp = () => !!(window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.();
 const redirectUrl = () => (/^https?:/.test(window.location.protocol) && !isNativeApp() ? window.location.origin + window.location.pathname : SITE_URL);
@@ -110,7 +113,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = useCallback(async (fullName: string, email: string, password: string) => {
     const sb = await getSupabase();
-    const { data, error } = await sb.auth.signUp({ email, password, options: { data: { full_name: fullName }, emailRedirectTo: redirectUrl() } });
+    // Açık rıza kayıt formunda zorunludur; sunucu, rızanın verildiği anı ve metin sürümünü profile yazar (kvkk.sql).
+    const { data, error } = await sb.auth.signUp({
+      email, password,
+      options: { data: { full_name: fullName, kvkk_consent_at: new Date().toISOString(), kvkk_version: KVKK_VERSION }, emailRedirectTo: redirectUrl() },
+    });
     if (error) throw error;
     // Aynı e-posta zaten kayıtlıysa Supabase hata vermez, kimliksiz bir kullanıcı döndürür.
     if (data.user && data.user.identities?.length === 0) throw new Error('user already exists');

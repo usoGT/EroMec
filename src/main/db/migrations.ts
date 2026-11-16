@@ -312,6 +312,13 @@ export const MIGRATIONS: Migration[] = [
       db.run(`UPDATE expense_categories SET is_system = CASE WHEN is_system = 1 AND kind IN ('salary', 'overtime') THEN 1 ELSE 0 END`);
     },
   },
+  {
+    version: 7,
+    name: 'Kan grubu (özel nitelikli veri) artık tutulmuyor; mevcut değerler silindi',
+    up: (db) => {
+      db.run(`UPDATE employees SET blood_type = '', updated_at = datetime('now') WHERE blood_type <> ''`);
+    },
+  },
 ];
 
 export const LATEST_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;

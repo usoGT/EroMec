@@ -12,6 +12,9 @@
    4. `paylasim.sql` (şantiye paylaşma)
    5. `artimli.sql` (yalnızca değişenleri indirme + anlık güncelleme)
    6. `isletme.sql` (her firmanın ayrı işletme alanı)
+   7. `kvkk.sql` (kan grubu kaldırıldı, açık rıza kaydı, firma kodu deneme sınırı)
+
+   `isletme.sql` tekrar çalıştırılırsa ardından `kvkk.sql` de çalıştırılmalı (bazı işlevleri günceller).
 
    Hepsini tekrar çalıştırmak güvenlidir (`schema.sql` hariç: o yalnızca ilk kurulumda).
 3. **Authentication → Sign In / Providers**: Email açık kalsın, **Confirm email** açık olsun

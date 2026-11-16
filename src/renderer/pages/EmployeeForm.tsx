@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Employee, EmployeeInput, Site } from '../../shared/types';
-import { BLOOD_TYPES, formatIban, isValidIban, isValidNationalId } from '../../shared/identity';
+import { formatIban, isValidIban, isValidNationalId } from '../../shared/identity';
 import { api, errorMessage } from '../lib/api';
 import { useApp } from '../lib/context';
 import Modal from '../components/Modal';
@@ -174,12 +174,6 @@ export default function EmployeeForm({ employee, sites, onClose, onSaved }: Prop
           </div>
           <Field label="Banka adı"><input name="bankName" className="input" value={f.bankName} onChange={set('bankName')} maxLength={80} /></Field>
           <Field label="SGK sicil no"><input name="sgkNo" className="input" value={f.sgkNo} onChange={set('sgkNo')} maxLength={30} /></Field>
-          <Field label="Kan grubu">
-            <select name="bloodType" className="input" value={f.bloodType} onChange={set('bloodType')}>
-              <option value="">— Seçilmedi —</option>
-              {BLOOD_TYPES.map((b) => <option key={b} value={b}>{b}</option>)}
-            </select>
-          </Field>
         </div>
 
         <div className={`grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2 ${tab === 'contact' ? '' : 'hidden'}`}>

@@ -169,11 +169,11 @@ describe('artımlı indirme', () => {
 });
 
 describe('kurulum', () => {
-  it('isletme.sql tekrar çalıştırılabilir; veriler korunur', async () => {
+  it('isletme.sql ve kvkk.sql (sırayla) tekrar çalıştırılabilir; veriler korunur', async () => {
     const fs = await import('node:fs');
     const path = await import('node:path');
     const a = await owner('tekrar@x.com', 'Tekrar Ltd.');
-    await pg.db.exec(fs.readFileSync(path.join(__dirname, '..', 'supabase', 'isletme.sql'), 'utf8'));
+    for (const f of ['isletme.sql', 'kvkk.sql']) await pg.db.exec(fs.readFileSync(path.join(__dirname, '..', 'supabase', f), 'utf8'));
     expect((await pg.as<{ name: string }>(a, 'select name from companies')).map((c) => c.name)).toEqual(['Tekrar Ltd.']);
   });
 });
@@ -186,7 +186,7 @@ describe('firma kodu', () => {
 
     const sef = await pg.addUser('kod-sef@x.com');
     await expect(pg.rpc(sef, 'workspace_code')).rejects.toThrow(/yalnızca işletme sahibi/);
-    await expect(pg.rpc(sef, 'workspace_join', { code: 'YANLIS' })).rejects.toThrow(/bulunamadı/);
+    expect(await pg.rpc(sef, 'workspace_join', { code: 'YANLIS' })).toMatchObject({ error: expect.stringMatching(/bulunamadı/) });
     expect(await pg.rpc(sef, 'workspace_join', { code: ` ${code.slice(0, 3).toLowerCase()}-${code.slice(3)} ` })).toMatchObject({ name: 'Kod İnşaat' });
     expect((await pg.rpc<{ workspaceRole: string }>(sef, 'me_json')).workspaceRole).toBe('member');
     await expect(pg.rpc(sef, 'workspace_join', { code })).rejects.toThrow(/Zaten/);
@@ -195,7 +195,42 @@ describe('firma kodu', () => {
     const yeni = await pg.rpc<string>(o, 'workspace_reset_code');
     expect(yeni).not.toBe(code);
     const sef2 = await pg.addUser('kod-sef2@x.com');
-    await expect(pg.rpc(sef2, 'workspace_join', { code })).rejects.toThrow(/bulunamadı/);
+    expect(await pg.rpc(sef2, 'workspace_join', { code })).toMatchObject({ error: expect.stringMatching(/bulunamadı/) });
     await pg.rpc(sef2, 'workspace_join', { code: yeni });
+  });
+
+  it('bir hesap saatte en fazla 10 yanlış kod deneyebilir', async () => {
+    const o = await owner('sinir-sahip@x.com', 'Sınır Ltd.');
+    const code = await pg.rpc<string>(o, 'workspace_code');
+    const deneyen = await pg.addUser('deneyen@x.com');
+    for (let i = 0; i < 10; i++) {
+      expect(await pg.rpc(deneyen, 'workspace_join', { code: `ZZZZ${String(i).padStart(2, '2')}` })).toMatchObject({ error: expect.stringMatching(/bulunamadı/) });
+    }
+    // 11. denemede doğru kod bile kabul edilmez
+    expect(await pg.rpc(deneyen, 'workspace_join', { code })).toMatchObject({ error: expect.stringMatching(/Çok fazla/) });
+    expect((await pg.rpc<{ workspaceId: number | null }>(deneyen, 'me_json')).workspaceId).toBeNull();
+    // Bir saat geçince yeniden denenebilir
+    await pg.db.query(`update public.workspace_join_attempts set at = now() - interval '2 hours'`);
+    expect(await pg.rpc(deneyen, 'workspace_join', { code })).toMatchObject({ name: 'Sınır Ltd.' });
+  });
+});
+
+describe('KVKK', () => {
+  it('kan grubu sunucuda saklanamaz', async () => {
+    const o = await owner('kan@x.com');
+    await expect(pg.as(o, `insert into employees (employee_no, full_name, position, blood_type) values ('P8001', 'Kan Test', 'Usta', 'A Rh+')`)).rejects.toThrow(/employees_no_blood_type/);
+    await pg.as(o, `insert into employees (employee_no, full_name, position) values ('P8002', 'Kan Yok', 'Usta')`);
+  });
+
+  it('kayıtta verilen açık rıza profilde tarihle saklanır', async () => {
+    const id = '00000000-0000-4000-8000-00000000c0de';
+    await pg.db.query(`insert into auth.users (id, email, raw_user_meta_data) values ($1, 'riza@x.com', $2)`,
+      [id, JSON.stringify({ full_name: 'Rıza', kvkk_consent_at: '2026-11-16T10:00:00Z', kvkk_version: '2026-11-16' })]);
+    const [p] = (await pg.db.query<{ kvkk_consent_at: Date | null; kvkk_version: string }>('select kvkk_consent_at, kvkk_version from profiles where id = $1', [id])).rows;
+    expect(p.kvkk_consent_at).not.toBeNull();
+    expect(p.kvkk_version).toBe('2026-11-16');
+    await pg.addUser('rizasiz@x.com');
+    const [q] = (await pg.db.query<{ kvkk_consent_at: Date | null }>(`select kvkk_consent_at from profiles where email = 'rizasiz@x.com'`)).rows;
+    expect(q.kvkk_consent_at).toBeNull();
   });
 });

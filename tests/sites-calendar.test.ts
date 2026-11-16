@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import fs from 'node:fs';
 import { openService, tempDbPath, WASM_DIR } from './helpers';
 import { Db } from '../src/main/db/connection';
-import { MIGRATIONS, migrate } from '../src/main/db/migrations';
+import { LATEST_SCHEMA_VERSION, MIGRATIONS, migrate } from '../src/main/db/migrations';
 import { isValidIban, isValidNationalId, formatIban } from '../src/shared/identity';
 import type { EmployeeInput } from '../src/shared/types';
 
@@ -50,7 +50,7 @@ describe('migration v1 -> güncel', () => {
     old.persist();
     old.close();
     const { svc } = await openService(file);
-    expect(svc.dbInfo().schemaVersion).toBe(6);
+    expect(svc.dbInfo().schemaVersion).toBe(LATEST_SCHEMA_VERSION);
     expect(svc.companiesList().map((c) => c.name)).toEqual(['Eroğlu Mekanik']);
     const e = svc.employeesList()[0];
     expect(e).toMatchObject({ fullName: 'Eski Çalışan', siteId: null, nationalId: '', iban: '' });
@@ -59,7 +59,7 @@ describe('migration v1 -> güncel', () => {
 
   it('yeni veritabanında migration iki kez çalışmaz', async () => {
     const { db } = await openService();
-    expect(migrate(db)).toBe(6);
+    expect(migrate(db)).toBe(LATEST_SCHEMA_VERSION);
   });
 });
 
@@ -93,11 +93,11 @@ describe('firmalar ve şantiyeler', () => {
     const { svc, siteA, siteB } = await setup();
     expect(() => svc.employeeCreate({ input: emp({ nationalId: '12345678901' }) })).toThrow(/T.C. kimlik/);
     expect(() => svc.employeeCreate({ input: emp({ iban: 'TR00 1234' }) })).toThrow(/IBAN geçersiz/);
-    expect(() => svc.employeeCreate({ input: emp({ bloodType: 'Z' }) })).toThrow(/Kan grubu/);
     const a = svc.employeeCreate({
       input: emp({ nationalId: '10000000146', iban: 'tr33 0006 1005 1978 6457 8413 26', bankName: 'Ziraat', bloodType: 'A Rh+', birthDate: '1990-05-01', emergencyName: 'Ayşe', emergencyPhone: '0555', sgkNo: '123', address: 'Ankara' }),
     }).item!;
-    expect(a).toMatchObject({ nationalId: '10000000146', iban: 'TR330006100519786457841326', bloodType: 'A Rh+', birthDate: '1990-05-01' });
+    // Kan grubu (özel nitelikli veri) gönderilse bile saklanmaz
+    expect(a).toMatchObject({ nationalId: '10000000146', iban: 'TR330006100519786457841326', bloodType: '', birthDate: '1990-05-01' });
     expect(() => svc.employeeCreate({ input: emp({ fullName: 'Başka', nationalId: '10000000146' }) })).toThrow(/zaten "Ahmet Yılmaz"/);
     const b = svc.employeeCreate({ input: emp({ fullName: 'Can' }) }).item!;
     expect(svc.employeesAssignSite({ employeeIds: [a.id, b.id], siteId: siteB.id })).toBe(2);
@@ -194,7 +194,7 @@ describe('migration 4 -> 5 (1.4 sürümündeki puantaj ve bordro verisi)', () =>
     old.persist();
     old.close();
     const { svc } = await openService(file);
-    expect(svc.dbInfo().schemaVersion).toBe(6);
+    expect(svc.dbInfo().schemaVersion).toBe(LATEST_SCHEMA_VERSION);
     const m = svc.attendanceMonth({ month: '2026-10' });
     expect(m.rows[0].cells).toEqual({ '2026-10-01': 'X', '2026-10-02': 'D', '2026-10-03': 'Y' });
     expect(m.statuses.find((s) => s.code === 'X')!.short).toBe('8');

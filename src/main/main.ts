@@ -1,5 +1,5 @@
 // Puanto ana süreç: pencere, veritabanı ve IPC kurulumu.
-import { app, BrowserWindow, dialog, Menu, nativeTheme, session } from 'electron';
+import { app, BrowserWindow, dialog, Menu, nativeTheme, session, shell } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
 import { Db } from './db/connection';
@@ -32,6 +32,12 @@ function isTrustedUrl(url: string): boolean {
   return url.startsWith('file://');
 }
 
+/** Uygulamanın kendi sitesindeki sayfalar (ör. KVKK aydınlatma metni) sistem tarayıcısında açılır; başka adres açılmaz. */
+const OWN_SITE = 'https://usogt.github.io/Puanto/';
+function openOwnSite(url: string) {
+  if (url.startsWith(OWN_SITE)) void shell.openExternal(url);
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,
@@ -52,7 +58,10 @@ function createWindow() {
     },
   });
   mainWindow.once('ready-to-show', () => mainWindow?.show());
-  mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    openOwnSite(url);
+    return { action: 'deny' };
+  });
   mainWindow.webContents.on('will-navigate', (e, url) => {
     if (!isTrustedUrl(url)) e.preventDefault();
   });

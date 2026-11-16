@@ -4,7 +4,7 @@ import { PGlite } from '@electric-sql/pglite';
 import fs from 'node:fs';
 import path from 'node:path';
 
-export const SQL_FILES = ['schema.sql', 'sync.sql', 'uyelik.sql', 'paylasim.sql', 'artimli.sql', 'isletme.sql'];
+export const SQL_FILES = ['schema.sql', 'sync.sql', 'uyelik.sql', 'paylasim.sql', 'artimli.sql', 'isletme.sql', 'kvkk.sql'];
 
 const AUTH_STUB = `
   create schema auth;

@@ -1,4 +1,4 @@
--- Puanto işletmeleri (artimli.sql'den SONRA çalıştırılır; tekrar çalıştırmak güvenlidir).
+-- Puanto işletmeleri (artimli.sql'den SONRA çalıştırılır; tekrar çalıştırmak güvenlidir — ardından kvkk.sql de çalıştırılmalı).
 -- Her işletme (firma) kendi ayrı alanıdır: firma listesi, ayarlar, gider kategorileri, puantaj fırçaları,
 -- şantiyeler ve bütün kayıtlar işletmeye aittir; başka işletme hiçbirini göremez.
 --   * Kayıt olan kişi ya kendi işletmesini açar (sahip olur) ya da bir işletme sahibi onu e-postasıyla ekler.

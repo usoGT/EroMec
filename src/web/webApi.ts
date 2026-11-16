@@ -134,7 +134,12 @@ const workspaceApi = {
   workspaceCreate: async (name: string) => {
     await rpc('workspace_create', { ws_name: name });
   },
-  workspaceJoin: async (code: string) => (await rpc<{ name: string }>('workspace_join', { code })).name,
+  workspaceJoin: async (code: string) => {
+    // Yanlış kod / deneme sınırı hata olarak değil {error} olarak gelir (deneme kaydı geri alınmasın diye).
+    const r = await rpc<{ name?: string; error?: string }>('workspace_join', { code });
+    if (r.error) throw new Error(r.error);
+    return String(r.name ?? '');
+  },
   workspaceCode: () => rpc<string>('workspace_code', {}),
   workspaceResetCode: () => rpc<string>('workspace_reset_code', {}),
   workspaceMembers: async (): Promise<WorkspaceMember[]> =>

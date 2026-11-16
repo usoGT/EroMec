@@ -5,7 +5,7 @@ import { listOvertime } from './overtime';
 import { listExpenses } from './expenses';
 import { fail, id, kurus, optionalIsoDate, requiredText, text, trKey } from './validation';
 import { optionalSiteId } from './sites';
-import { isValidIban, isValidNationalId, normalizeIban, BLOOD_TYPES } from '../../shared/identity';
+import { isValidIban, isValidNationalId, normalizeIban } from '../../shared/identity';
 
 const SELECT = `
   SELECT e.id, e.employee_no AS employeeNo, e.full_name AS fullName, e.position,
@@ -31,8 +31,8 @@ function validate(db: Db, input: EmployeeInput): Validated {
   if (nationalId && !isValidNationalId(nationalId)) fail('T.C. kimlik numarası geçersiz (11 hane, kontrol hanesi tutmuyor).');
   const iban = normalizeIban(text(input.iban, 40));
   if (iban && !isValidIban(iban)) fail('IBAN geçersiz. TR ile başlayan 26 karakterlik IBAN girin (ör. TR12 0006 1005 1978 6457 8413 26).');
-  const bloodType = text(input.bloodType, 10);
-  if (bloodType && !BLOOD_TYPES.includes(bloodType)) fail('Kan grubu geçersiz.');
+  // Kan grubu (özel nitelikli veri) artık tutulmuyor: gelen değer yok sayılır, sütun hep boş kalır.
+  const bloodType = '';
   return {
     siteId: optionalSiteId(db, input.siteId),
     nationalId,
